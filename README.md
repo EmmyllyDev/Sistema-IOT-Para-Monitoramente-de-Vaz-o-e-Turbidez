@@ -8,7 +8,7 @@
 
 <br/>
 
-# 💧 Sistema IoT para Monitoramento de Vazão e Turbidez
+# 💧 SIGUA - Sistema IoT para Monitoramento de Vazão e Turbidez
 
 **ETA Júlio Campos – DAE Várzea Grande, Mato Grosso**
 
