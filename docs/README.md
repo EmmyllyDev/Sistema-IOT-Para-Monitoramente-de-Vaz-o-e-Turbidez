@@ -133,42 +133,24 @@ Estabelece os procedimentos e responsabilidades relativos ao controle e vigilân
 ## 📂 Estrutura do Projeto
 
 ```
-/
-├── hardware/
-│   ├── firmware/          # Código embarcado do dispositivo IoT
-│   ├── schematics/        # Esquemas elétricos dos sensores
-│   └── docs/              # Documentação técnica do hardware
-│
-├── backend/
-│   ├── api/               # API de recepção dos dados dos sensores
-│   ├── validation/        # Módulo de validação conforme Portaria 888/2021
-│   └── reports/           # Geração automatizada de relatórios técnicos
-│
-├── frontend/
-│   ├── dashboard/         # Visualização em tempo real
-│   ├── reports/           # Interface de relatórios
-│   └── alerts/            # Sistema de alertas de não conformidade
-│
-└── docs/
-    ├── visao-produto.md
-    └── arquitetura.md
+SistEMA-IOT-Para-Monitoramento-de-Vaz-o-e-Turbidez
+├── core/                       # Configurações centrais do Django (settings, urls)
+├── monitoramento/              # App principal (US13 e US14)
+│   ├── migrations/
+│   ├── templates/              # HTML do Dashboard (US14)
+│   │   └── dashboard.html
+│   ├── api/                    # Lógica da API de recebimento (US13)
+│   │   └── views_api.py
+│   ├── admin.py                # Interface administrativa
+│   ├── models.py               # Definição das tabelas (US07 e US13)
+│   ├── urls.py                 # Rotas do App
+│   └── views.py                # Lógica de exibição do Dashboard (US14)
+├── static/                     # CSS, JS e Imagens (Bootstrap)
+├── manage.py
+├── .env                        # Credenciais do PostgreSQL
+└── requirements.txt
 ```
 
----
-
-## 🗺️ Roadmap
-
-- [x] Levantamento de requisitos junto ao DAE Várzea Grande
-- [x] Definição da visão de produto
-- [ ] Prototipação do hardware (sensores + dispositivo IoT)
-- [ ] Desenvolvimento da plataforma web
-- [ ] Integração IoT ↔ Plataforma
-- [ ] Validação conforme Portaria GM/MS nº 888/2021
-- [ ] Implantação na ETA Júlio Campos
-- [ ] Geração dos primeiros relatórios técnicos
-- [ ] Avaliação operacional e ajustes finais
-
----
 
 <div align="center">
 
