@@ -134,18 +134,18 @@ Estabelece os procedimentos e responsabilidades relativos ao controle e vigilân
 
 ```
 SistEMA-IOT-Para-Monitoramento-de-Vaz-o-e-Turbidez
-├── core/                       # Configurações centrais do Django (settings, urls)
-├── monitoramento/              # App principal (US13 e US14)
+├── core/                       # Configurações centrais(settings, urls)
+├── monitoramento/              # App principal 
 │   ├── migrations/
-│   ├── templates/              # HTML do Dashboard (US14)
+│   ├── templates/              # HTML do Dashboard
 │   │   └── dashboard.html
-│   ├── api/                    # Lógica da API de recebimento (US13)
+│   ├── api/                    # Lógica da API de recebimento 
 │   │   └── views_api.py
 │   ├── admin.py                # Interface administrativa
-│   ├── models.py               # Definição das tabelas (US07 e US13)
+│   ├── models.py               # Definição das tabelas 
 │   ├── urls.py                 # Rotas do App
-│   └── views.py                # Lógica de exibição do Dashboard (US14)
-├── static/                     # CSS, JS e Imagens (Bootstrap)
+│   └── views.py                # Lógica de exibição do Dashboard
+├── static/                     # CSS, JS e Imagens
 ├── manage.py
 ├── .env                        # Credenciais do PostgreSQL
 └── requirements.txt
