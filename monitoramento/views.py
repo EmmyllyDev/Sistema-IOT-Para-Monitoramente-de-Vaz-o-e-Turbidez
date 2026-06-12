@@ -3,7 +3,9 @@ from rest_framework.response import Response
 from rest_framework import status
 from .serializers import LeituraSensorSerializer
 from django.shortcuts import render, redirect
-from django.contrib import messages
+from django.contrib import messages, auth
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
 from .models import LeituraSensor
 import json
 
@@ -46,6 +48,28 @@ class ReceberDadosESP32(APIView):
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
+def login_view(request):
+    if request.user.is_authenticated:
+        return redirect('dashboard')
+
+    if request.method == 'POST':
+        username = request.POST.get('username', '').strip()
+        password = request.POST.get('password', '')
+        user = authenticate(request, username=username, password=password)
+        if user is not None:
+            login(request, user)
+            return redirect('dashboard')
+        messages.error(request, 'Usuário ou senha incorretos.')
+
+    return render(request, 'monitoramento/login.html')
+
+
+def logout_view(request):
+    logout(request)
+    return redirect('login')
+
+
+@login_required
 def dashboard(request):
     # Busca as últimas 30 leituras ordenadas da mais recente para a mais antiga
     leituras = LeituraSensor.objects.order_by('-horario')[:30]
@@ -75,6 +99,7 @@ def dashboard(request):
     return render(request, 'monitoramento/dashboard.html', contexto)
 
 
+@login_required
 def nova_leitura(request):
     if request.method == 'POST':
         def get_float(key):
@@ -90,7 +115,7 @@ def nova_leitura(request):
             'coliformes_ufc':     get_float('coliformes_ufc'),
             'cor_uh':             get_float('cor_uh'),
             'ponto_coleta':       request.POST.get('ponto_coleta', '').strip() or None,
-            'operador':           request.POST.get('operador', '').strip() or None,
+            'operador':           request.POST.get('operador', '').strip() or request.user.get_full_name() or request.user.username,
         }
 
         if dados['turbidez_ntu'] is None or dados['vazao_ls'] is None or dados['nivel_cm'] is None:
