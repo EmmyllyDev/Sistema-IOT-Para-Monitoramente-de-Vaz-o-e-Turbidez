@@ -2,7 +2,8 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from .serializers import LeituraSensorSerializer
-from django.shortcuts import render
+from django.shortcuts import render, redirect
+from django.contrib import messages
 from .models import LeituraSensor
 import json
 
@@ -72,3 +73,33 @@ def dashboard(request):
     }
 
     return render(request, 'monitoramento/dashboard.html', contexto)
+
+
+def nova_leitura(request):
+    if request.method == 'POST':
+        def get_float(key):
+            val = request.POST.get(key, '').strip()
+            return float(val) if val else None
+
+        dados = {
+            'turbidez_ntu':       get_float('turbidez_ntu'),
+            'vazao_ls':           get_float('vazao_ls'),
+            'nivel_cm':           get_float('nivel_cm'),
+            'ph':                 get_float('ph'),
+            'cloro_residual_mgl': get_float('cloro_residual_mgl'),
+            'coliformes_ufc':     get_float('coliformes_ufc'),
+            'cor_uh':             get_float('cor_uh'),
+            'ponto_coleta':       request.POST.get('ponto_coleta', '').strip() or None,
+            'operador':           request.POST.get('operador', '').strip() or None,
+        }
+
+        if dados['turbidez_ntu'] is None or dados['vazao_ls'] is None or dados['nivel_cm'] is None:
+            messages.error(request, 'Turbidez, Vazão e Nível são obrigatórios.')
+            return render(request, 'monitoramento/nova_leitura.html', {'form_data': request.POST})
+
+        dados['status_conformidade'] = calcular_conformidade(dados)
+        LeituraSensor.objects.create(**dados)
+        messages.success(request, 'Leitura registrada com sucesso!')
+        return redirect('dashboard')
+
+    return render(request, 'monitoramento/nova_leitura.html')
