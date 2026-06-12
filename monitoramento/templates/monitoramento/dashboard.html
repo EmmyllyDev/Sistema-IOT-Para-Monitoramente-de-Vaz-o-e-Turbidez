@@ -1,0 +1,249 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIGUÁ - Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <script src="https://cdn.plot.ly/plotly-2.24.1.min.js"></script>
+
+    <style>
+        body {
+            background-color: #d4ecee; /* Azul claro estilo Power BI */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow-x: hidden;
+        }
+        .header-title {
+            color: #003366;
+            font-weight: bold;
+        }
+        .kpi-container {
+            background-color: #e8f6f8;
+            border-radius: 8px;
+            padding: 10px;
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.05);
+            margin-bottom: 15px;
+        }
+        .card-custom {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            text-align: center;
+            padding: 15px 5px;
+            height: 100%;
+        }
+        .value-text {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #003366;
+            margin: 0;
+        }
+        .label-text {
+            font-size: 0.8rem;
+            color: #666;
+            text-transform: uppercase;
+        }
+        .plot-container {
+            height: 200px;
+            width: 100%;
+        }
+        .plot-large {
+            height: 350px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+<div class="offcanvas offcanvas-start" tabindex="-1" id="menuLateral" aria-labelledby="menuLateralLabel">
+    <div class="offcanvas-header bg-primary text-white">
+        <h5 class="offcanvas-title fw-bold" id="menuLateralLabel"><i class="bi bi-droplet-half me-2"></i> Menu SIGUÁ</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">
+        <ul class="nav flex-column gap-3 mt-3">
+            <li class="nav-item">
+                <a href="#" class="nav-link text-dark fw-bold bg-light rounded p-3 border">
+                    <i class="bi bi-graph-up text-primary me-2 fs-5"></i> Gráficos (Dashboard)
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link text-dark p-3 rounded hover-shadow" data-bs-toggle="modal" data-bs-target="#modalRelatorio">
+                    <i class="bi bi-file-earmark-text text-success me-2 fs-5"></i> Relatório Consolidado
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link text-dark p-3 rounded hover-shadow">
+                    <i class="bi bi-gear-fill text-secondary me-2 fs-5"></i> Configuração do Sistema
+                </a>
+            </li>
+        </ul>
+        <hr class="mt-5">
+        <a href="#" class="nav-link text-danger p-3 fw-bold">
+            <i class="bi bi-box-arrow-left me-2"></i> Sair
+        </a>
+    </div>
+</div>
+
+
+<div class="container-fluid py-3 px-4">
+    
+    <div class="d-flex align-items-center mb-4">
+        <button class="btn btn-primary me-3" type="button" data-bs-toggle="offcanvas" data-bs-target="#menuLateral">
+            <i class="bi bi-list fs-4"></i>
+        </button>
+        <div>
+            <h3 class="header-title mb-0">DASHBOARD - MONITORAMENTO ETA JÚLIO CAMPOS</h3>
+            <h5 class="text-primary">Parâmetros Físico-Químicos</h5>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-3">
+        <div class="col-md-6">
+            <div class="kpi-container">
+                <h6 class="text-center fw-bold text-dark mb-0">Turbidez (≤ 5,0 NTU)</h6>
+                <div id="gaugeTurbidez" class="plot-container"></div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="kpi-container">
+                <h6 class="text-center fw-bold text-dark mb-0">Vazão Média (L/s)</h6>
+                <div id="gaugeVazao" class="plot-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-3">
+        <div class="col-md-6">
+            <div class="row g-2 h-100">
+                <div class="col-8">
+                    <div class="kpi-container h-100 mb-0">
+                        <h6 class="text-center text-dark" style="font-size: 0.9rem;">Média de Turbidez</h6>
+                        <div id="linhaTurbidez" class="plot-container" style="height: 120px;"></div>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="card-custom">
+                        <p class="label-text mt-2">Status da Água</p>
+                        <p class="value-text {% if ultima_leitura.status_conformidade %}text-success{% else %}text-danger{% endif %}" style="font-size: 1.2rem;">
+                            {% if ultima_leitura.status_conformidade %}100% OK{% else %}ALERTA{% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="row g-2 h-100">
+                <div class="col-8">
+                    <div class="kpi-container h-100 mb-0">
+                        <h6 class="text-center text-dark" style="font-size: 0.9rem;">Média de Vazão</h6>
+                        <div id="linhaVazao" class="plot-container" style="height: 120px;"></div>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="card-custom">
+                        <p class="label-text mt-2">Pico (L/s)</p>
+                        <p class="value-text" id="kpiPicoVazao" style="font-size: 1.5rem;">--</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-12">
+            <div class="card-custom p-3" style="background-color: #e8f6f8;">
+                <h5 class="header-title text-start mb-3"><i class="bi bi-activity"></i> Histórico Geral (Correlação Vazão x Turbidez)</h5>
+                <div id="graficoGeral" class="plot-large"></div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<div class="modal fade" id="modalRelatorio" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title"><i class="bi bi-file-earmark-spreadsheet me-2"></i> Relatório Mensal</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted">Resumo da Portaria GM/MS nº 888/2021.</p>
+        <ul class="list-group list-group-flush mb-3">
+            <li class="list-group-item d-flex justify-content-between">Amostras exigidas <span class="badge bg-secondary">720</span></li>
+            <li class="list-group-item d-flex justify-content-between">Amostras realizadas <span class="badge bg-primary">715</span></li>
+            <li class="list-group-item d-flex justify-content-between">Em conformidade <span class="badge bg-success">710</span></li>
+            <li class="list-group-item d-flex justify-content-between">Média (Turbidez) <span class="fw-bold">2.4 NTU</span></li>
+            <li class="list-group-item d-flex justify-content-between">Valor Permitido <span class="fw-bold text-danger">5.0 NTU</span></li>
+        </ul>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-success"><i class="bi bi-file-excel me-2"></i> Baixar Planilha</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    {% if ultima_leitura %}
+    var horarios = {{ horarios_json|safe }};
+    var turbidez = {{ turbidez_json|safe }};
+    var vazao = {{ vazao_json|safe }};
+    
+    document.getElementById('kpiPicoVazao').innerText = Math.max(...vazao).toFixed(0);
+
+    var gaugeLayout = { margin: { t: 25, b: 0, l: 20, r: 20 }, paper_bgcolor: 'rgba(0,0,0,0)', font: { color: '#003366' } };
+
+    // 1. GAUGE TURBIDEZ
+    Plotly.newPlot('gaugeTurbidez', [{
+        type: "indicator", mode: "gauge+number", value: {{ ultima_leitura.turbidez_ntu|stringformat:"f" }},
+        gauge: {
+            axis: { range: [null, 10], tickwidth: 1, tickcolor: "darkblue" },
+            bar: { color: "#003366" }, bgcolor: "white", borderwidth: 2, bordercolor: "transparent",
+            steps: [ { range: [0, 5], color: "#d4ecee" }, { range: [5, 10], color: "#ffcccc" } ],
+            threshold: { line: { color: "red", width: 4 }, thickness: 0.75, value: 5.0 }
+        }
+    }], gaugeLayout, {displayModeBar: false});
+
+    // 2. GAUGE VAZÃO
+    Plotly.newPlot('gaugeVazao', [{
+        type: "indicator", mode: "gauge+number", value: {{ ultima_leitura.vazao_ls|stringformat:"f" }},
+        gauge: {
+            axis: { range: [0, 500] }, bar: { color: "#003366" }, bgcolor: "white",
+            steps: [ { range: [0, 500], color: "#d4ecee" } ]
+        }
+    }], gaugeLayout, {displayModeBar: false});
+
+    // --- GRÁFICOS DE LINHA ---
+    var lineLayout = { 
+        margin: { t: 10, b: 20, l: 25, r: 10 }, 
+        paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
+        xaxis: { showgrid: false, showticklabels: false }, yaxis: { showgrid: true, gridcolor: '#e0e0e0' }
+    };
+
+    Plotly.newPlot('linhaTurbidez', [{ x: horarios, y: turbidez, type: 'scatter', mode: 'lines', line: {shape: 'hv', color: '#003366', width: 2} }], lineLayout, {displayModeBar: false});
+    Plotly.newPlot('linhaVazao', [{ x: horarios, y: vazao, type: 'scatter', mode: 'lines', line: {shape: 'hv', color: '#003366', width: 2} }], lineLayout, {displayModeBar: false});
+
+    // --- NOVO GRÁFICO COMBINADO GERAL ---
+    var trace1 = { x: horarios, y: turbidez, name: 'Turbidez (NTU)', type: 'scatter', mode: 'lines+markers', line: {color: '#003366', width: 3} };
+    var trace2 = { x: horarios, y: vazao, name: 'Vazão (L/s)', type: 'scatter', mode: 'lines', line: {color: '#0099cc', dash: 'dot', width: 2}, yaxis: 'y2' };
+    
+    var layoutGeral = {
+        margin: { t: 10, b: 40, l: 40, r: 40 },
+        paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'white',
+        legend: { orientation: 'h', y: -0.2 },
+        xaxis: { gridcolor: '#f0f0f0' },
+        yaxis: { title: 'Turbidez (NTU)', titlefont: {color: '#003366'}, tickfont: {color: '#003366'}, gridcolor: '#f0f0f0' },
+        yaxis2: { title: 'Vazão (L/s)', titlefont: {color: '#0099cc'}, tickfont: {color: '#0099cc'}, overlaying: 'y', side: 'right', gridcolor: 'transparent' }
+    };
+    
+    Plotly.newPlot('graficoGeral', [trace1, trace2], layoutGeral, {responsive: true});
+    {% endif %}
+</script>
+</body>
+</html>
