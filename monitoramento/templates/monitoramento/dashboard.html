@@ -253,8 +253,11 @@
 
     <nav class="sidebar-nav">
         <div class="sidebar-label">Principal</div>
-        <a href="#" class="nav-item-link active">
+        <a href="{% url 'dashboard' %}" class="nav-item-link active">
             <i class="bi bi-speedometer2"></i> Dashboard
+        </a>
+        <a href="{% url 'nova_leitura' %}" class="nav-item-link">
+            <i class="bi bi-plus-circle"></i> Nova Leitura
         </a>
         <a href="#" class="nav-item-link" data-bs-toggle="modal" data-bs-target="#modalRelatorio">
             <i class="bi bi-file-earmark-bar-graph"></i> Relatório
@@ -264,12 +267,16 @@
         <a href="#" class="nav-item-link">
             <i class="bi bi-sliders"></i> Configurações
         </a>
-        <a href="#" class="nav-item-link">
+        <a href="{% url 'logout' %}" class="nav-item-link">
             <i class="bi bi-box-arrow-right"></i> Sair
         </a>
     </nav>
 
     <div class="sidebar-footer">
+        <div style="color:#e2e8f0; font-size:0.78rem; font-weight:600;">
+            <i class="bi bi-person-circle me-1"></i>
+            {{ request.user.get_full_name|default:request.user.username }}
+        </div>
         <small>Portaria GM/MS nº 888/2021</small>
     </div>
 </aside>
