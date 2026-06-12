@@ -7,14 +7,30 @@ from .models import LeituraSensor
 import json
 
 
+def calcular_conformidade(dados):
+    turbidez = float(dados.get('turbidez_ntu') or 99.0)
+    ph = dados.get('ph')
+    cloro = dados.get('cloro_residual_mgl')
+    coliformes = dados.get('coliformes_ufc')
+    cor = dados.get('cor_uh')
+
+    ok = turbidez <= 5.0
+    if ph is not None:
+        ok = ok and 6.0 <= float(ph) <= 9.5
+    if cloro is not None:
+        ok = ok and 0.2 <= float(cloro) <= 5.0
+    if coliformes is not None:
+        ok = ok and float(coliformes) == 0
+    if cor is not None:
+        ok = ok and float(cor) <= 15.0
+    return ok
+
+
 class ReceberDadosESP32(APIView):
     def post(self, request):
-        dados = request.data.copy() 
-        
-        turbidez = float(dados.get('turbidez_ntu', 99.0))
-        
-        status_ok = True if turbidez <= 5.0 else False
-        
+        dados = request.data.copy()
+
+        status_ok = calcular_conformidade(dados)
         dados['status_conformidade'] = status_ok
 
         # Passamos para o tradutor (Serializer)
