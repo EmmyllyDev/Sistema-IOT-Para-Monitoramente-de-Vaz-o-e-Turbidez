@@ -186,21 +186,55 @@
                 <i class="bi bi-lightbulb me-1 text-warning"></i> Sugestões de Tratamento
             </div>
             <div class="d-flex flex-column gap-3">
-                {% for s in sugestoes %}
-                <div class="sugestao-card {{ s.status }}">
-                    <div class="sugestao-icon {{ s.status }}">
-                        {% if s.status == 'ok' %}
+                {% for log in logs %}
+                <div class="sugestao-card {{ log.status }}">
+                    <div class="sugestao-icon {{ log.status }}">
+                        {% if log.status == 'ok' %}
                             <i class="bi bi-check-lg"></i>
-                        {% elif s.status == 'alerta' %}
+                        {% elif log.status == 'alerta' %}
                             <i class="bi bi-exclamation"></i>
                         {% else %}
                             <i class="bi bi-x-lg"></i>
                         {% endif %}
                     </div>
                     <div style="flex:1;">
-                        <div class="sugestao-parametro">{{ s.parametro }}</div>
-                        <div class="sugestao-valor {{ s.status }}">{{ s.valor }}</div>
-                        <div class="sugestao-mensagem">{{ s.mensagem }}</div>
+                        <div class="sugestao-parametro">{{ log.parametro }}</div>
+                        <div class="sugestao-mensagem mt-1">{{ log.mensagem }}</div>
+
+                        <!-- Feedback -->
+                        <div class="mt-2">
+                            {% if log.feedback %}
+                                {% if log.feedback == 'aceita' %}
+                                    <span style="font-size:0.75rem; background:#dcfce7; color:#15803d; padding:3px 10px; border-radius:999px; font-weight:600;">
+                                        <i class="bi bi-check me-1"></i>Sugestão aceita
+                                    </span>
+                                {% else %}
+                                    <span style="font-size:0.75rem; background:#fee2e2; color:#b91c1c; padding:3px 10px; border-radius:999px; font-weight:600;">
+                                        <i class="bi bi-x me-1"></i>Sugestão rejeitada
+                                    </span>
+                                {% endif %}
+                            {% else %}
+                                <div class="d-flex gap-2 align-items-center">
+                                    <span style="font-size:0.72rem; color:#94a3b8;">Você seguiu essa sugestão?</span>
+                                    <form method="POST" action="{% url 'registrar_feedback' log.pk %}" style="display:inline;">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="feedback" value="aceita">
+                                        <button type="submit"
+                                            style="font-size:0.75rem; background:#dcfce7; color:#15803d; border:none; padding:3px 10px; border-radius:999px; font-weight:600; cursor:pointer;">
+                                            <i class="bi bi-check me-1"></i>Sim
+                                        </button>
+                                    </form>
+                                    <form method="POST" action="{% url 'registrar_feedback' log.pk %}" style="display:inline;">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="feedback" value="rejeitada">
+                                        <button type="submit"
+                                            style="font-size:0.75rem; background:#fee2e2; color:#b91c1c; border:none; padding:3px 10px; border-radius:999px; font-weight:600; cursor:pointer;">
+                                            <i class="bi bi-x me-1"></i>Não
+                                        </button>
+                                    </form>
+                                </div>
+                            {% endif %}
+                        </div>
                     </div>
                 </div>
                 {% endfor %}

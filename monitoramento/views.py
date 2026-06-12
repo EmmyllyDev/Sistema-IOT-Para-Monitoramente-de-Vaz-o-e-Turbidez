@@ -6,7 +6,7 @@ from django.shortcuts import render, redirect
 from django.contrib import messages, auth
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
-from .models import LeituraSensor
+from .models import LeituraSensor, SugestaoLog
 from .sugestoes import gerar_sugestoes
 import json
 
@@ -125,6 +125,17 @@ def nova_leitura(request):
 
         dados['status_conformidade'] = calcular_conformidade(dados)
         leitura = LeituraSensor.objects.create(**dados)
+
+        operador_nome = request.user.get_full_name() or request.user.username
+        for s in gerar_sugestoes(leitura):
+            SugestaoLog.objects.create(
+                leitura=leitura,
+                parametro=s['parametro'],
+                status=s['status'],
+                mensagem=s['mensagem'],
+                operador=operador_nome,
+            )
+
         return redirect('resultado_leitura', pk=leitura.pk)
 
     return render(request, 'monitoramento/nova_leitura.html')
@@ -133,10 +144,20 @@ def nova_leitura(request):
 @login_required
 def resultado_leitura(request, pk):
     leitura = LeituraSensor.objects.get(pk=pk)
-    sugestoes = gerar_sugestoes(leitura)
-    tem_critico = any(s['status'] == 'critico' for s in sugestoes)
+    logs = leitura.sugestoes.all()
+    tem_critico = logs.filter(status='critico').exists()
     return render(request, 'monitoramento/resultado_leitura.html', {
         'leitura': leitura,
-        'sugestoes': sugestoes,
+        'logs': logs,
         'tem_critico': tem_critico,
     })
+
+
+@login_required
+def registrar_feedback(request, log_id):
+    if request.method == 'POST':
+        feedback = request.POST.get('feedback')
+        if feedback in ('aceita', 'rejeitada'):
+            SugestaoLog.objects.filter(pk=log_id).update(feedback=feedback)
+    log = SugestaoLog.objects.get(pk=log_id)
+    return redirect('resultado_leitura', pk=log.leitura_id)
