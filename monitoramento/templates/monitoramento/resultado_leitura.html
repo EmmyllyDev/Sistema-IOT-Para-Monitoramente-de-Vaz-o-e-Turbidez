@@ -1,0 +1,289 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIGUÁ — Resultado da Leitura</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        *, body { font-family: 'Inter', sans-serif; }
+        body { background-color: #f1f5f9; overflow-x: hidden; }
+
+        /* ── Sidebar ── */
+        .sidebar { position: fixed; top: 0; left: 0; width: 220px; height: 100vh; background: #0f2744; display: flex; flex-direction: column; z-index: 100; }
+        .sidebar-brand { padding: 20px 20px 16px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+        .sidebar-brand .brand-name { color: #fff; font-size: 1.1rem; font-weight: 700; letter-spacing: 0.05em; }
+        .sidebar-brand .brand-sub  { color: #94a3b8; font-size: 0.7rem; line-height: 1.3; margin-top: 2px; }
+        .sidebar-nav   { padding: 16px 12px; flex: 1; }
+        .sidebar-label { color: #475569; font-size: 0.65rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; padding: 0 8px; margin-bottom: 6px; margin-top: 12px; }
+        .nav-item-link { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 8px; color: #94a3b8; text-decoration: none; font-size: 0.85rem; font-weight: 500; transition: background 0.15s, color 0.15s; margin-bottom: 2px; }
+        .nav-item-link:hover  { background: rgba(255,255,255,0.06); color: #e2e8f0; }
+        .nav-item-link.active { background: rgba(37,99,235,0.25); color: #93c5fd; }
+        .nav-item-link i { font-size: 1rem; width: 18px; text-align: center; }
+        .sidebar-footer { padding: 16px; border-top: 1px solid rgba(255,255,255,0.08); }
+        .sidebar-footer small { color: #475569; font-size: 0.7rem; }
+
+        /* ── Main ── */
+        .main-content { margin-left: 220px; padding: 28px 28px 40px; min-height: 100vh; }
+
+        /* ── Alerta crítico ── */
+        .banner-critico {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-left: 4px solid #dc2626;
+            border-radius: 10px;
+            padding: 14px 18px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        .banner-critico i { color: #dc2626; font-size: 1.3rem; flex-shrink: 0; }
+        .banner-critico-text { font-size: 0.85rem; font-weight: 600; color: #991b1b; }
+        .banner-critico-sub  { font-size: 0.78rem; color: #b91c1c; margin-top: 1px; }
+
+        /* ── Sugestão card ── */
+        .sugestao-card {
+            background: #fff;
+            border-radius: 10px;
+            padding: 16px 18px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+            border-left: 4px solid transparent;
+            display: flex;
+            gap: 14px;
+            align-items: flex-start;
+        }
+        .sugestao-card.ok      { border-left-color: #16a34a; }
+        .sugestao-card.alerta  { border-left-color: #d97706; }
+        .sugestao-card.critico { border-left-color: #dc2626; }
+
+        .sugestao-icon {
+            width: 34px; height: 34px; border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1rem; flex-shrink: 0;
+        }
+        .sugestao-icon.ok      { background: #f0fdf4; color: #16a34a; }
+        .sugestao-icon.alerta  { background: #fffbeb; color: #d97706; }
+        .sugestao-icon.critico { background: #fef2f2; color: #dc2626; }
+
+        .sugestao-parametro {
+            font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.06em; color: #94a3b8;
+        }
+        .sugestao-valor {
+            font-size: 1rem; font-weight: 700; color: #0f172a; margin: 2px 0 4px;
+        }
+        .sugestao-valor.ok      { color: #15803d; }
+        .sugestao-valor.alerta  { color: #b45309; }
+        .sugestao-valor.critico { color: #b91c1c; }
+
+        .sugestao-mensagem {
+            font-size: 0.82rem; color: #475569; line-height: 1.5;
+        }
+
+        .disclaimer {
+            font-size: 0.72rem; color: #94a3b8;
+            background: #f8fafc; border-radius: 8px;
+            padding: 10px 14px; margin-top: 24px;
+            border: 1px solid #e2e8f0;
+        }
+
+        /* ── Resumo da leitura ── */
+        .resumo-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 18px 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+            margin-bottom: 24px;
+        }
+        .resumo-title {
+            font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.06em; color: #94a3b8; margin-bottom: 12px;
+        }
+        .resumo-item {
+            display: flex; justify-content: space-between;
+            font-size: 0.82rem; padding: 6px 0;
+            border-bottom: 1px solid #f1f5f9;
+            color: #334155;
+        }
+        .resumo-item:last-child { border-bottom: none; }
+        .resumo-item span:first-child { color: #64748b; }
+        .resumo-item strong { color: #0f172a; }
+
+        @media (max-width: 768px) {
+            .sidebar { width: 100%; height: auto; position: relative; }
+            .main-content { margin-left: 0; padding: 16px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ═══ SIDEBAR ═══ -->
+<aside class="sidebar">
+    <div class="sidebar-brand">
+        <div class="brand-name">💧 SIGUÁ</div>
+        <div class="brand-sub">ETA Júlio Campos<br>DAE Várzea Grande — MT</div>
+    </div>
+    <nav class="sidebar-nav">
+        <div class="sidebar-label">Principal</div>
+        <a href="{% url 'dashboard' %}" class="nav-item-link">
+            <i class="bi bi-speedometer2"></i> Dashboard
+        </a>
+        <a href="{% url 'nova_leitura' %}" class="nav-item-link active">
+            <i class="bi bi-plus-circle"></i> Nova Leitura
+        </a>
+        <a href="#" class="nav-item-link">
+            <i class="bi bi-file-earmark-bar-graph"></i> Relatório
+        </a>
+        <div class="sidebar-label">Sistema</div>
+        <a href="#" class="nav-item-link">
+            <i class="bi bi-sliders"></i> Configurações
+        </a>
+        <a href="{% url 'logout' %}" class="nav-item-link">
+            <i class="bi bi-box-arrow-right"></i> Sair
+        </a>
+    </nav>
+    <div class="sidebar-footer">
+        <div style="color:#e2e8f0; font-size:0.78rem; font-weight:600;">
+            <i class="bi bi-person-circle me-1"></i>
+            {{ request.user.get_full_name|default:request.user.username }}
+        </div>
+        <small>Portaria GM/MS nº 888/2021</small>
+    </div>
+</aside>
+
+<!-- ═══ CONTEÚDO ═══ -->
+<main class="main-content">
+
+    <div class="mb-4">
+        <div style="font-size:1.15rem; font-weight:700; color:#0f172a;">Resultado da Leitura</div>
+        <div style="font-size:0.8rem; color:#64748b; margin-top:2px;">
+            Registrada em {{ leitura.horario|date:"d/m/Y \à\s H:i:s" }}
+            {% if leitura.operador %} · {{ leitura.operador }}{% endif %}
+            {% if leitura.ponto_coleta %} · {{ leitura.get_ponto_coleta_display|default:leitura.ponto_coleta }}{% endif %}
+        </div>
+    </div>
+
+    <!-- Banner evento crítico -->
+    {% if tem_critico %}
+    <div class="banner-critico">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        <div>
+            <div class="banner-critico-text">Parâmetros fora do padrão detectados</div>
+            <div class="banner-critico-sub">Verifique as sugestões abaixo e acione o responsável técnico se necessário.</div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="row g-4">
+        <!-- Sugestões -->
+        <div class="col-lg-7">
+            <div style="font-size:0.8rem; font-weight:600; color:#334155; margin-bottom:12px;">
+                <i class="bi bi-lightbulb me-1 text-warning"></i> Sugestões de Tratamento
+            </div>
+            <div class="d-flex flex-column gap-3">
+                {% for s in sugestoes %}
+                <div class="sugestao-card {{ s.status }}">
+                    <div class="sugestao-icon {{ s.status }}">
+                        {% if s.status == 'ok' %}
+                            <i class="bi bi-check-lg"></i>
+                        {% elif s.status == 'alerta' %}
+                            <i class="bi bi-exclamation"></i>
+                        {% else %}
+                            <i class="bi bi-x-lg"></i>
+                        {% endif %}
+                    </div>
+                    <div style="flex:1;">
+                        <div class="sugestao-parametro">{{ s.parametro }}</div>
+                        <div class="sugestao-valor {{ s.status }}">{{ s.valor }}</div>
+                        <div class="sugestao-mensagem">{{ s.mensagem }}</div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="disclaimer">
+                <i class="bi bi-info-circle me-1"></i>
+                As sugestões acima são recomendações de apoio à decisão operacional geradas automaticamente com base na
+                Portaria GM/MS nº 888/2021. <strong>A decisão final é sempre do operador responsável.</strong>
+            </div>
+        </div>
+
+        <!-- Resumo da leitura -->
+        <div class="col-lg-5">
+            <div style="font-size:0.8rem; font-weight:600; color:#334155; margin-bottom:12px;">
+                <i class="bi bi-clipboard-data me-1 text-primary"></i> Dados Registrados
+            </div>
+            <div class="resumo-card">
+                <div class="resumo-title">Parâmetros</div>
+
+                <div class="resumo-item">
+                    <span>Turbidez</span>
+                    <strong>{{ leitura.turbidez_ntu|floatformat:2 }} NTU</strong>
+                </div>
+                <div class="resumo-item">
+                    <span>Vazão</span>
+                    <strong>{{ leitura.vazao_ls|floatformat:1 }} L/s</strong>
+                </div>
+                <div class="resumo-item">
+                    <span>Nível</span>
+                    <strong>{{ leitura.nivel_cm|floatformat:0 }} cm</strong>
+                </div>
+                {% if leitura.ph is not None %}
+                <div class="resumo-item">
+                    <span>pH</span>
+                    <strong>{{ leitura.ph|floatformat:2 }}</strong>
+                </div>
+                {% endif %}
+                {% if leitura.cloro_residual_mgl is not None %}
+                <div class="resumo-item">
+                    <span>Cloro Residual</span>
+                    <strong>{{ leitura.cloro_residual_mgl|floatformat:2 }} mg/L</strong>
+                </div>
+                {% endif %}
+                {% if leitura.cor_uh is not None %}
+                <div class="resumo-item">
+                    <span>Cor Aparente</span>
+                    <strong>{{ leitura.cor_uh|floatformat:1 }} uH</strong>
+                </div>
+                {% endif %}
+                {% if leitura.coliformes_ufc is not None %}
+                <div class="resumo-item">
+                    <span>Coliformes Totais</span>
+                    <strong>{{ leitura.coliformes_ufc|floatformat:0 }} UFC/100mL</strong>
+                </div>
+                {% endif %}
+
+                <div class="resumo-title mt-3">Conformidade</div>
+                <div class="resumo-item">
+                    <span>Status Portaria 888</span>
+                    {% if leitura.status_conformidade %}
+                        <span style="background:#dcfce7; color:#15803d; font-size:0.72rem; padding:3px 10px; border-radius:999px; font-weight:600;">Conforme</span>
+                    {% else %}
+                        <span style="background:#fee2e2; color:#b91c1c; font-size:0.72rem; padding:3px 10px; border-radius:999px; font-weight:600;">Não conforme</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="d-flex gap-2">
+                <a href="{% url 'dashboard' %}" class="btn btn-sm"
+                   style="background:#0f2744; color:#fff; border-radius:8px; font-size:0.82rem; font-weight:600; padding:9px 18px;">
+                    <i class="bi bi-speedometer2 me-1"></i> Ir ao Dashboard
+                </a>
+                <a href="{% url 'nova_leitura' %}" class="btn btn-sm"
+                   style="background:#f1f5f9; color:#475569; border-radius:8px; font-size:0.82rem; font-weight:500; padding:9px 16px;">
+                    Nova Leitura
+                </a>
+            </div>
+        </div>
+    </div>
+
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

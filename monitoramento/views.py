@@ -7,6 +7,7 @@ from django.contrib import messages, auth
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from .models import LeituraSensor
+from .sugestoes import gerar_sugestoes
 import json
 
 
@@ -123,8 +124,19 @@ def nova_leitura(request):
             return render(request, 'monitoramento/nova_leitura.html', {'form_data': request.POST})
 
         dados['status_conformidade'] = calcular_conformidade(dados)
-        LeituraSensor.objects.create(**dados)
-        messages.success(request, 'Leitura registrada com sucesso!')
-        return redirect('dashboard')
+        leitura = LeituraSensor.objects.create(**dados)
+        return redirect('resultado_leitura', pk=leitura.pk)
 
     return render(request, 'monitoramento/nova_leitura.html')
+
+
+@login_required
+def resultado_leitura(request, pk):
+    leitura = LeituraSensor.objects.get(pk=pk)
+    sugestoes = gerar_sugestoes(leitura)
+    tem_critico = any(s['status'] == 'critico' for s in sugestoes)
+    return render(request, 'monitoramento/resultado_leitura.html', {
+        'leitura': leitura,
+        'sugestoes': sugestoes,
+        'tem_critico': tem_critico,
+    })
