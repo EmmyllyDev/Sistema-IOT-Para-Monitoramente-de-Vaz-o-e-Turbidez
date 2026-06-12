@@ -253,8 +253,11 @@
 
     <nav class="sidebar-nav">
         <div class="sidebar-label">Principal</div>
-        <a href="#" class="nav-item-link active">
+        <a href="{% url 'dashboard' %}" class="nav-item-link active">
             <i class="bi bi-speedometer2"></i> Dashboard
+        </a>
+        <a href="{% url 'nova_leitura' %}" class="nav-item-link">
+            <i class="bi bi-plus-circle"></i> Nova Leitura
         </a>
         <a href="#" class="nav-item-link" data-bs-toggle="modal" data-bs-target="#modalRelatorio">
             <i class="bi bi-file-earmark-bar-graph"></i> Relatório
