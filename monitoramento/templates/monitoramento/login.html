@@ -111,15 +111,12 @@
 
 <div class="login-card">
     <div class="text-center mb-2">
-        <div class="brand-name">💧 SIGUÁ</div>
+        <img src="{% static 'img/Logo.png' %}" alt="SIGUÁ" style="width:100px; height:auto; margin-bottom:10px;">
         <div class="brand-sub">ETA Júlio Campos · DAE Várzea Grande — MT</div>
     </div>
 
     <div class="divider"></div>
 
-    <p style="font-size:0.85rem; font-weight:600; color:#334155; margin-bottom:20px;">
-        Acesso do Operador
-    </p>
 
     {% if messages %}
     {% for msg in messages %}
@@ -155,8 +152,7 @@
     </form>
 
     <div class="footer-note">
-        Acesso restrito a operadores autorizados.<br>
-        Portaria GM/MS nº 888/2021
+        Acesso restrito a operadores autorizados.
     </div>
 </div>
 
