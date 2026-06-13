@@ -60,6 +60,7 @@
         .sugestao-card.ok      { border-left-color: #16a34a; }
         .sugestao-card.alerta  { border-left-color: #d97706; }
         .sugestao-card.critico { border-left-color: #dc2626; }
+        .sugestao-card.info    { border-left-color: #2563eb; }
 
         .sugestao-icon {
             width: 34px; height: 34px; border-radius: 8px;
@@ -69,6 +70,7 @@
         .sugestao-icon.ok      { background: #f0fdf4; color: #16a34a; }
         .sugestao-icon.alerta  { background: #fffbeb; color: #d97706; }
         .sugestao-icon.critico { background: #fef2f2; color: #dc2626; }
+        .sugestao-icon.info    { background: #eff6ff; color: #2563eb; }
 
         .sugestao-parametro {
             font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
@@ -80,6 +82,7 @@
         .sugestao-valor.ok      { color: #15803d; }
         .sugestao-valor.alerta  { color: #b45309; }
         .sugestao-valor.critico { color: #b91c1c; }
+        .sugestao-valor.info    { color: #1d4ed8; }
 
         .sugestao-mensagem {
             font-size: 0.82rem; color: #475569; line-height: 1.5;
@@ -189,16 +192,25 @@
                 {% for s in sugestoes %}
                 <div class="sugestao-card {{ s.status }}">
                     <div class="sugestao-icon {{ s.status }}">
-                        {% if s.status == 'ok' %}
+                        {% if s.tipo == 'anomalia' %}
+                            <i class="bi bi-graph-up-arrow"></i>
+                        {% elif s.status == 'ok' %}
                             <i class="bi bi-check-lg"></i>
                         {% elif s.status == 'alerta' %}
                             <i class="bi bi-exclamation"></i>
+                        {% elif s.status == 'info' %}
+                            <i class="bi bi-robot"></i>
                         {% else %}
                             <i class="bi bi-x-lg"></i>
                         {% endif %}
                     </div>
                     <div style="flex:1;">
-                        <div class="sugestao-parametro">{{ s.parametro }}</div>
+                        <div class="sugestao-parametro">
+                            {{ s.parametro }}
+                            {% if s.modo_label %}
+                            <span style="margin-left:6px; font-size:0.65rem; background:{% if s.modo == 'ml' %}#dbeafe{% else %}#f3f4f6{% endif %}; color:{% if s.modo == 'ml' %}#1d4ed8{% else %}#6b7280{% endif %}; padding:2px 7px; border-radius:999px; font-weight:600; text-transform:none; letter-spacing:0;">{{ s.modo_label }}</span>
+                            {% endif %}
+                        </div>
                         <div class="sugestao-valor {{ s.status }}">{{ s.valor }}</div>
                         <div class="sugestao-mensagem">{{ s.mensagem }}</div>
                     </div>
@@ -211,6 +223,64 @@
                 As sugestões acima são recomendações de apoio à decisão operacional geradas automaticamente com base na
                 Portaria GM/MS nº 888/2021. <strong>A decisão final é sempre do operador responsável.</strong>
             </div>
+
+            <!-- Formulário de feedback -->
+            {% if not leitura.sugestao_aceita is not None %}
+            <div style="background:#fff; border-radius:10px; padding:18px 20px; box-shadow:0 1px 3px rgba(0,0,0,0.06); margin-top:20px;">
+                <div style="font-size:0.8rem; font-weight:600; color:#334155; margin-bottom:14px;">
+                    <i class="bi bi-pencil-square me-1 text-primary"></i> O que você fez após essa leitura?
+                </div>
+                <form method="post" action="{% url 'registrar_feedback' leitura.pk %}">
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label style="font-size:0.78rem; font-weight:600; color:#475569; display:block; margin-bottom:6px;">
+                            Você seguiu a sugestão do sistema?
+                        </label>
+                        <div class="d-flex gap-2">
+                            <label style="cursor:pointer; display:flex; align-items:center; gap:6px; font-size:0.82rem; color:#334155;">
+                                <input type="radio" name="sugestao_aceita" value="sim"> Sim, segui a recomendação
+                            </label>
+                            <label style="cursor:pointer; display:flex; align-items:center; gap:6px; font-size:0.82rem; color:#334155; margin-left:12px;">
+                                <input type="radio" name="sugestao_aceita" value="nao"> Não segui
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label style="font-size:0.78rem; font-weight:600; color:#475569; display:block; margin-bottom:6px;">
+                            Dosagem de coagulante aplicada (mg/L) <span style="color:#94a3b8; font-weight:400;">— opcional</span>
+                        </label>
+                        <input type="number" name="dosagem_aplicada_mgl" step="0.1" min="0"
+                               placeholder="Ex: 35.5"
+                               style="width:180px; padding:7px 10px; border:1px solid #e2e8f0; border-radius:7px; font-size:0.82rem; color:#334155;">
+                        <span style="font-size:0.75rem; color:#94a3b8; margin-left:8px;">mg/L</span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label style="font-size:0.78rem; font-weight:600; color:#475569; display:block; margin-bottom:6px;">
+                            Observação <span style="color:#94a3b8; font-weight:400;">— opcional</span>
+                        </label>
+                        <textarea name="observacao_operador" rows="2"
+                                  placeholder="Ex: Aumentei a dosagem pois a turbidez ainda estava elevada..."
+                                  style="width:100%; padding:8px 10px; border:1px solid #e2e8f0; border-radius:7px; font-size:0.82rem; color:#334155; resize:vertical;"></textarea>
+                    </div>
+
+                    <button type="submit"
+                            style="background:#0f2744; color:#fff; border:none; border-radius:8px; padding:9px 20px; font-size:0.82rem; font-weight:600; cursor:pointer;">
+                        <i class="bi bi-send me-1"></i> Registrar feedback
+                    </button>
+                </form>
+            </div>
+            {% else %}
+            <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:10px; padding:14px 18px; margin-top:20px; font-size:0.82rem; color:#15803d;">
+                <i class="bi bi-check-circle me-1"></i> Feedback registrado.
+                {% if leitura.dosagem_aplicada_mgl %}
+                    Dosagem aplicada: <strong>{{ leitura.dosagem_aplicada_mgl }} mg/L</strong>.
+                {% endif %}
+            </div>
+            {% endif %}
+
         </div>
 
         <!-- Resumo da leitura -->

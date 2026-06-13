@@ -6,6 +6,7 @@ from django.shortcuts import render, redirect
 from django.contrib import messages, auth
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
+from datetime import datetime
 from .models import LeituraSensor
 from .sugestoes import gerar_sugestoes
 import json
@@ -72,26 +73,23 @@ def logout_view(request):
 
 @login_required
 def dashboard(request):
-    # Busca as últimas 30 leituras ordenadas da mais recente para a mais antiga
-    leituras = LeituraSensor.objects.order_by('-horario')[:30]
-    
-    # Pega a última leitura para os KPIs (Cards superiores)
+    leituras = LeituraSensor.objects.exclude(horario=None).order_by('-horario')[:30]
     ultima_leitura = leituras.first() if leituras else None
 
-    # Prepara os dados para os gráficos (precisamos inverter para o gráfico ir da esq. p/ dir.)
-    leituras_grafico = reversed(leituras)
+    leituras_grafico = list(reversed(list(leituras)))
     horarios = []
     turbidez = []
     vazao = []
 
     for l in leituras_grafico:
-        horarios.append(l.horario.strftime("%H:%M:%S"))
+        horarios.append(l.horario.strftime("%d/%m/%Y") if l.horario else "")
         turbidez.append(l.turbidez_ntu)
-        vazao.append(l.vazao_ls)
+        vazao.append(l.vazao_ls or 0)
 
     contexto = {
         'ultima_leitura': ultima_leitura,
-        'leituras': leituras[:10], # Mandamos só as 10 últimas para a tabela
+        'ultima_horario_local': ultima_leitura.horario if ultima_leitura else None,
+        'leituras': leituras[:10],
         'horarios_json': json.dumps(horarios),
         'turbidez_json': json.dumps(turbidez),
         'vazao_json': json.dumps(vazao),
@@ -108,15 +106,28 @@ def nova_leitura(request):
             return float(val) if val else None
 
         dados = {
-            'turbidez_ntu':       get_float('turbidez_ntu'),
-            'vazao_ls':           get_float('vazao_ls'),
-            'nivel_cm':           get_float('nivel_cm'),
-            'ph':                 get_float('ph'),
-            'cloro_residual_mgl': get_float('cloro_residual_mgl'),
-            'coliformes_ufc':     get_float('coliformes_ufc'),
-            'cor_uh':             get_float('cor_uh'),
-            'ponto_coleta':       request.POST.get('ponto_coleta', '').strip() or None,
-            'operador':           request.POST.get('operador', '').strip() or request.user.get_full_name() or request.user.username,
+            # Água tratada
+            'turbidez_ntu':         get_float('turbidez_ntu'),
+            'vazao_ls':             get_float('vazao_ls'),
+            'nivel_cm':             get_float('nivel_cm'),
+            'ph':                   get_float('ph'),
+            'cloro_residual_mgl':   get_float('cloro_residual_mgl'),
+            'coliformes_ufc':       get_float('coliformes_ufc'),
+            'cor_uh':               get_float('cor_uh'),
+            'alcalinidade_tratada': get_float('alcalinidade_tratada'),
+            # Água bruta
+            'turbidez_bruta_ntu':   get_float('turbidez_bruta_ntu'),
+            'cor_bruta_uh':         get_float('cor_bruta_uh'),
+            'ph_bruto':             get_float('ph_bruto'),
+            'alcalinidade_bruta':   get_float('alcalinidade_bruta'),
+            # Dosagens
+            'sulfato_aluminio_kg':    get_float('sulfato_aluminio_kg'),
+            'policloreto_aluminio_l': get_float('policloreto_aluminio_l'),
+            'hipoclorito_sodio_kg':   get_float('hipoclorito_sodio_kg'),
+            'vazao_m3_dia':           get_float('vazao_m3_dia'),
+            # Identificação
+            'ponto_coleta': request.POST.get('ponto_coleta', '').strip() or None,
+            'operador':     request.POST.get('operador', '').strip() or request.user.get_full_name() or request.user.username,
         }
 
         if dados['turbidez_ntu'] is None or dados['vazao_ls'] is None or dados['nivel_cm'] is None:
@@ -124,6 +135,7 @@ def nova_leitura(request):
             return render(request, 'monitoramento/nova_leitura.html', {'form_data': request.POST})
 
         dados['status_conformidade'] = calcular_conformidade(dados)
+        dados['horario'] = datetime.now()
         leitura = LeituraSensor.objects.create(**dados)
         return redirect('resultado_leitura', pk=leitura.pk)
 
@@ -140,3 +152,20 @@ def resultado_leitura(request, pk):
         'sugestoes': sugestoes,
         'tem_critico': tem_critico,
     })
+
+
+@login_required
+def registrar_feedback(request, pk):
+    if request.method != 'POST':
+        return redirect('resultado_leitura', pk=pk)
+
+    leitura = LeituraSensor.objects.get(pk=pk)
+
+    dosagem = request.POST.get('dosagem_aplicada_mgl', '').strip()
+    leitura.dosagem_aplicada_mgl = float(dosagem) if dosagem else None
+    leitura.sugestao_aceita = request.POST.get('sugestao_aceita') == 'sim'
+    leitura.observacao_operador = request.POST.get('observacao_operador', '').strip() or None
+    leitura.save()
+
+    messages.success(request, 'Feedback registrado com sucesso.')
+    return redirect('dashboard')

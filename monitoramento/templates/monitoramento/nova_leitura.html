@@ -13,7 +13,6 @@
         *, body { font-family: 'Inter', sans-serif; }
         body { background-color: #f1f5f9; overflow-x: hidden; }
 
-        /* ── Sidebar (igual ao dashboard) ── */
         .sidebar {
             position: fixed; top: 0; left: 0;
             width: 220px; height: 100vh;
@@ -33,16 +32,14 @@
         .sidebar-footer { padding: 16px; border-top: 1px solid rgba(255,255,255,0.08); }
         .sidebar-footer small { color: #475569; font-size: 0.7rem; }
 
-        /* ── Main ── */
         .main-content { margin-left: 220px; padding: 28px 28px 40px; min-height: 100vh; }
 
-        /* ── Form Card ── */
         .form-card {
             background: #fff;
             border-radius: 12px;
             padding: 28px 32px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-            max-width: 780px;
+            max-width: 860px;
         }
 
         .section-title {
@@ -55,6 +52,24 @@
             padding-bottom: 8px;
             border-bottom: 1px solid #f1f5f9;
         }
+
+        .section-title.bruta { color: #b45309; border-color: #fef3c7; }
+        .section-title.dosagem { color: #065f46; border-color: #d1fae5; }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 14px;
+            padding-bottom: 8px;
+        }
+        .section-header .dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .dot-blue   { background: #2563eb; }
+        .dot-yellow { background: #d97706; }
+        .dot-green  { background: #059669; }
 
         .form-label {
             font-size: 0.8rem;
@@ -70,64 +85,57 @@
             padding: 9px 12px;
             color: #0f172a;
         }
-
         .form-control:focus, .form-select:focus {
             border-color: #2563eb;
             box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
         }
+        .form-control.bruta:focus  { border-color: #d97706; box-shadow: 0 0 0 3px rgba(217,119,6,0.12); }
+        .form-control.dosagem:focus { border-color: #059669; box-shadow: 0 0 0 3px rgba(5,150,105,0.12); }
 
-        .field-hint {
-            font-size: 0.72rem;
-            color: #94a3b8;
-            margin-top: 3px;
-        }
-
-        .field-hint.warning { color: #d97706; }
+        .field-hint { font-size: 0.72rem; color: #94a3b8; margin-top: 3px; }
 
         .badge-required {
-            font-size: 0.62rem;
-            background: #eff6ff;
-            color: #2563eb;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-weight: 600;
-            margin-left: 4px;
-            vertical-align: middle;
+            font-size: 0.62rem; background: #eff6ff; color: #2563eb;
+            padding: 2px 6px; border-radius: 4px; font-weight: 600; margin-left: 4px; vertical-align: middle;
+        }
+        .badge-optional {
+            font-size: 0.62rem; background: #f8fafc; color: #94a3b8;
+            padding: 2px 6px; border-radius: 4px; font-weight: 600; margin-left: 4px; vertical-align: middle;
+        }
+        .badge-ml {
+            font-size: 0.62rem; background: #ecfdf5; color: #059669;
+            padding: 2px 6px; border-radius: 4px; font-weight: 600; margin-left: 4px; vertical-align: middle;
         }
 
-        .badge-optional {
-            font-size: 0.62rem;
-            background: #f8fafc;
-            color: #94a3b8;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-weight: 600;
-            margin-left: 4px;
-            vertical-align: middle;
+        .section-box {
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
         }
+        .section-box.tratada { background: #f8faff; border: 1px solid #e0e9ff; }
+        .section-box.bruta   { background: #fffbeb; border: 1px solid #fde68a; }
+        .section-box.dosagem { background: #f0fdf4; border: 1px solid #bbf7d0; }
+        .section-box.identif { background: #f8fafc; border: 1px solid #e2e8f0; }
 
         .btn-salvar {
-            background: #2563eb;
-            color: #fff;
-            border: none;
-            border-radius: 8px;
-            padding: 10px 24px;
-            font-size: 0.875rem;
-            font-weight: 600;
-            transition: background 0.15s;
+            background: #2563eb; color: #fff; border: none;
+            border-radius: 8px; padding: 10px 24px;
+            font-size: 0.875rem; font-weight: 600; transition: background 0.15s;
         }
         .btn-salvar:hover { background: #1d4ed8; color: #fff; }
 
         .btn-cancelar {
-            background: #f1f5f9;
-            color: #475569;
-            border: none;
-            border-radius: 8px;
-            padding: 10px 20px;
-            font-size: 0.875rem;
-            font-weight: 500;
+            background: #f1f5f9; color: #475569; border: none;
+            border-radius: 8px; padding: 10px 20px; font-size: 0.875rem; font-weight: 500;
         }
         .btn-cancelar:hover { background: #e2e8f0; }
+
+        .ml-tip {
+            background: #ecfdf5; border: 1px solid #6ee7b7;
+            border-radius: 8px; padding: 10px 14px;
+            font-size: 0.78rem; color: #065f46;
+            margin-bottom: 20px;
+        }
 
         @media (max-width: 768px) {
             .sidebar { width: 100%; height: auto; position: relative; }
@@ -137,7 +145,7 @@
 </head>
 <body>
 
-<!-- ═══ SIDEBAR ═══ -->
+<!-- SIDEBAR -->
 <aside class="sidebar">
     <div class="sidebar-brand">
         <div class="brand-name">💧 SIGUÁ</div>
@@ -171,7 +179,7 @@
     </div>
 </aside>
 
-<!-- ═══ CONTEÚDO ═══ -->
+<!-- CONTEÚDO -->
 <main class="main-content">
 
     <div class="mb-4">
@@ -188,99 +196,184 @@
     {% endfor %}
     {% endif %}
 
+    <div class="ml-tip">
+        <i class="bi bi-robot me-1"></i>
+        <strong>Dica do modelo de ML:</strong> quanto mais campos você preencher (especialmente água bruta e dosagens), mais precisa será a recomendação de coagulante.
+    </div>
+
     <div class="form-card">
         <form method="POST" novalidate>
             {% csrf_token %}
 
-            <!-- Parâmetros obrigatórios -->
-            <div class="section-title">Parâmetros obrigatórios</div>
-            <div class="row g-3 mb-4">
-                <div class="col-md-4">
-                    <label class="form-label">
-                        Turbidez <span class="badge-required">obrigatório</span>
-                    </label>
-                    <input type="number" step="0.01" min="0" name="turbidez_ntu"
-                           class="form-control" placeholder="ex: 1.2"
-                           value="{{ form_data.turbidez_ntu|default:'' }}" required>
-                    <div class="field-hint {% if form_data.turbidez_ntu and form_data.turbidez_ntu|floatformat:2 > '5.00' %}warning{% endif %}">
-                        NTU &nbsp;·&nbsp; limite: 5,0 NTU
+            <!-- ÁGUA TRATADA -->
+            <div class="section-box tratada">
+                <div class="section-header">
+                    <span class="dot dot-blue"></span>
+                    <span style="font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:#1e40af;">
+                        Água Tratada
+                    </span>
+                    <span class="badge-required" style="margin-left:0;">obrigatório: Turbidez, Vazão, Nível</span>
+                </div>
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">Turbidez <span class="badge-required">obrigatório</span></label>
+                        <input type="number" step="0.01" min="0" name="turbidez_ntu"
+                               class="form-control" placeholder="ex: 1.2"
+                               value="{{ form_data.turbidez_ntu|default:'' }}" required>
+                        <div class="field-hint">NTU · limite: 5,0</div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Vazão <span class="badge-required">obrigatório</span></label>
+                        <input type="number" step="0.1" min="0" name="vazao_ls"
+                               class="form-control" placeholder="ex: 120.5"
+                               value="{{ form_data.vazao_ls|default:'' }}" required>
+                        <div class="field-hint">L/s</div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Nível <span class="badge-required">obrigatório</span></label>
+                        <input type="number" step="0.1" min="0" name="nivel_cm"
+                               class="form-control" placeholder="ex: 85"
+                               value="{{ form_data.nivel_cm|default:'' }}" required>
+                        <div class="field-hint">cm</div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Vazão de Entrada <span class="badge-optional">opcional</span></label>
+                        <input type="number" step="1" min="0" name="vazao_m3_dia"
+                               class="form-control" placeholder="ex: 8640"
+                               value="{{ form_data.vazao_m3_dia|default:'' }}">
+                        <div class="field-hint">M³/dia</div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">pH Tratado</label>
+                        <input type="number" step="0.01" min="0" max="14" name="ph"
+                               class="form-control" placeholder="ex: 7.2"
+                               value="{{ form_data.ph|default:'' }}">
+                        <div class="field-hint">limite: 6,0 – 9,5</div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Cloro Residual</label>
+                        <input type="number" step="0.01" min="0" name="cloro_residual_mgl"
+                               class="form-control" placeholder="ex: 1.1"
+                               value="{{ form_data.cloro_residual_mgl|default:'' }}">
+                        <div class="field-hint">mg/L · limite: 0,2 – 5,0</div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Cor Aparente</label>
+                        <input type="number" step="0.1" min="0" name="cor_uh"
+                               class="form-control" placeholder="ex: 5.0"
+                               value="{{ form_data.cor_uh|default:'' }}">
+                        <div class="field-hint">uH · limite: 15</div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Coliformes Totais</label>
+                        <input type="number" step="0.01" min="0" name="coliformes_ufc"
+                               class="form-control" placeholder="ex: 0"
+                               value="{{ form_data.coliformes_ufc|default:'' }}">
+                        <div class="field-hint">UFC/100mL · esperado: 0</div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Alcalinidade Tratada</label>
+                        <input type="number" step="0.1" min="0" name="alcalinidade_tratada"
+                               class="form-control" placeholder="ex: 35.0"
+                               value="{{ form_data.alcalinidade_tratada|default:'' }}">
+                        <div class="field-hint">mg/L CaCO₃</div>
                     </div>
                 </div>
-                <div class="col-md-4">
-                    <label class="form-label">
-                        Vazão <span class="badge-required">obrigatório</span>
-                    </label>
-                    <input type="number" step="0.1" min="0" name="vazao_ls"
-                           class="form-control" placeholder="ex: 120.5"
-                           value="{{ form_data.vazao_ls|default:'' }}" required>
-                    <div class="field-hint">L/s</div>
+            </div>
+
+            <!-- ÁGUA BRUTA -->
+            <div class="section-box bruta">
+                <div class="section-header">
+                    <span class="dot dot-yellow"></span>
+                    <span style="font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:#92400e;">
+                        Água Bruta
+                    </span>
+                    <span class="badge-ml">alimenta o ML</span>
                 </div>
-                <div class="col-md-4">
-                    <label class="form-label">
-                        Nível <span class="badge-required">obrigatório</span>
-                    </label>
-                    <input type="number" step="0.1" min="0" name="nivel_cm"
-                           class="form-control" placeholder="ex: 85"
-                           value="{{ form_data.nivel_cm|default:'' }}" required>
-                    <div class="field-hint">cm</div>
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">Turbidez Bruta</label>
+                        <input type="number" step="0.01" min="0" name="turbidez_bruta_ntu"
+                               class="form-control bruta" placeholder="ex: 45.0"
+                               value="{{ form_data.turbidez_bruta_ntu|default:'' }}">
+                        <div class="field-hint">NTU</div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Cor Bruta</label>
+                        <input type="number" step="0.1" min="0" name="cor_bruta_uh"
+                               class="form-control bruta" placeholder="ex: 120.0"
+                               value="{{ form_data.cor_bruta_uh|default:'' }}">
+                        <div class="field-hint">uH</div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">pH Bruto</label>
+                        <input type="number" step="0.01" min="0" max="14" name="ph_bruto"
+                               class="form-control bruta" placeholder="ex: 6.8"
+                               value="{{ form_data.ph_bruto|default:'' }}">
+                        <div class="field-hint">0 – 14</div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Alcalinidade Bruta</label>
+                        <input type="number" step="0.1" min="0" name="alcalinidade_bruta"
+                               class="form-control bruta" placeholder="ex: 28.0"
+                               value="{{ form_data.alcalinidade_bruta|default:'' }}">
+                        <div class="field-hint">mg/L CaCO₃</div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Parâmetros opcionais -->
-            <div class="section-title">Parâmetros físico-químicos <span class="badge-optional">opcional</span></div>
-            <div class="row g-3 mb-4">
-                <div class="col-md-3">
-                    <label class="form-label">pH</label>
-                    <input type="number" step="0.01" min="0" max="14" name="ph"
-                           class="form-control" placeholder="ex: 7.2"
-                           value="{{ form_data.ph|default:'' }}">
-                    <div class="field-hint">limite: 6,0 – 9,5</div>
+            <!-- DOSAGENS -->
+            <div class="section-box dosagem">
+                <div class="section-header">
+                    <span class="dot dot-green"></span>
+                    <span style="font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:#065f46;">
+                        Dosagens Aplicadas
+                    </span>
+                    <span class="badge-ml">treina o ML</span>
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label">Cloro Residual</label>
-                    <input type="number" step="0.01" min="0" name="cloro_residual_mgl"
-                           class="form-control" placeholder="ex: 1.1"
-                           value="{{ form_data.cloro_residual_mgl|default:'' }}">
-                    <div class="field-hint">mg/L &nbsp;·&nbsp; limite: 0,2 – 5,0</div>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Cor Aparente</label>
-                    <input type="number" step="0.1" min="0" name="cor_uh"
-                           class="form-control" placeholder="ex: 5.0"
-                           value="{{ form_data.cor_uh|default:'' }}">
-                    <div class="field-hint">uH &nbsp;·&nbsp; limite: 15 uH</div>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Coliformes Totais</label>
-                    <input type="number" step="0.01" min="0" name="coliformes_ufc"
-                           class="form-control" placeholder="ex: 0"
-                           value="{{ form_data.coliformes_ufc|default:'' }}">
-                    <div class="field-hint">UFC/100mL &nbsp;·&nbsp; esperado: 0</div>
-                </div>
-            </div>
-
-            <!-- Identificação -->
-            <div class="section-title">Identificação da coleta <span class="badge-optional">opcional</span></div>
-            <div class="row g-3 mb-4">
-                <div class="col-md-6">
-                    <label class="form-label">Ponto de Coleta</label>
-                    <select name="ponto_coleta" class="form-select">
-                        <option value="">— Selecione —</option>
-                        <option value="saida_filtro"    {% if form_data.ponto_coleta == 'saida_filtro' %}selected{% endif %}>Saída do Filtro</option>
-                        <option value="saida_eta"       {% if form_data.ponto_coleta == 'saida_eta' %}selected{% endif %}>Saída da ETA</option>
-                        <option value="rede_distribuicao" {% if form_data.ponto_coleta == 'rede_distribuicao' %}selected{% endif %}>Rede de Distribuição</option>
-                        <option value="reservatorio"    {% if form_data.ponto_coleta == 'reservatorio' %}selected{% endif %}>Reservatório</option>
-                    </select>
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label">Operador Responsável</label>
-                    <input type="text" name="operador" class="form-control"
-                           placeholder="Nome do operador"
-                           value="{{ form_data.operador|default:request.user.get_full_name|default:request.user.username }}">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Sulfato de Alumínio</label>
+                        <input type="number" step="0.1" min="0" name="sulfato_aluminio_kg"
+                               class="form-control dosagem" placeholder="ex: 12.5"
+                               value="{{ form_data.sulfato_aluminio_kg|default:'' }}">
+                        <div class="field-hint">Kg</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Policloreto de Alumínio (PAC)</label>
+                        <input type="number" step="0.1" min="0" name="policloreto_aluminio_l"
+                               class="form-control dosagem" placeholder="ex: 5.0"
+                               value="{{ form_data.policloreto_aluminio_l|default:'' }}">
+                        <div class="field-hint">Litros</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Hipoclorito de Sódio</label>
+                        <input type="number" step="0.1" min="0" name="hipoclorito_sodio_kg"
+                               class="form-control dosagem" placeholder="ex: 3.2"
+                               value="{{ form_data.hipoclorito_sodio_kg|default:'' }}">
+                        <div class="field-hint">Kg</div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Ações -->
+            <!-- IDENTIFICAÇÃO -->
+            <div class="section-box identif">
+                <div class="section-header">
+                    <span style="font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:#475569;">
+                        Identificação da Coleta
+                    </span>
+                </div>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Operador Responsável</label>
+                        <input type="text" name="operador" class="form-control"
+                               placeholder="Nome do operador"
+                               value="{{ form_data.operador|default:request.user.get_full_name|default:request.user.username }}">
+                    </div>
+                </div>
+            </div>
+
+            <!-- AÇÕES -->
             <div class="d-flex gap-2 pt-2">
                 <button type="submit" class="btn btn-salvar">
                     <i class="bi bi-check-lg me-1"></i> Salvar Leitura

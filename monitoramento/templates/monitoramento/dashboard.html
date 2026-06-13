@@ -288,7 +288,14 @@
     <div class="topbar">
         <div>
             <div class="topbar-title">Monitoramento em Tempo Real</div>
-            <div class="topbar-sub">Parâmetros físico-químicos — últimas leituras</div>
+            <div class="topbar-sub">
+                Parâmetros físico-químicos — última leitura:
+                {% if ultima_horario_local %}
+                    {{ ultima_horario_local|date:"d/m/Y" }} às {{ ultima_horario_local|date:"H:i" }}
+                {% else %}
+                    sem registros
+                {% endif %}
+            </div>
         </div>
         {% if ultima_leitura %}
         <span class="status-badge {% if ultima_leitura.status_conformidade %}ok{% else %}alert{% endif %}">
@@ -298,65 +305,53 @@
         {% endif %}
     </div>
 
-    <!-- KPI Cards -->
+    <!-- KPI Cards — Água Tratada -->
     <div class="row g-3 mb-4">
         <div class="col-6 col-md-3">
             <div class="kpi-card blue">
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
                         <div class="kpi-label">Turbidez</div>
-                        <div class="kpi-value">
-                            {% if ultima_leitura %}{{ ultima_leitura.turbidez_ntu|floatformat:2 }}{% else %}--{% endif %}
-                        </div>
-                        <div class="kpi-unit">NTU &nbsp;·&nbsp; limite 5,0</div>
+                        <div class="kpi-value">{% if ultima_leitura %}{{ ultima_leitura.turbidez_ntu|floatformat:2 }}{% else %}--{% endif %}</div>
+                        <div class="kpi-unit">NTU · limite 5,0</div>
                     </div>
                     <div class="kpi-icon blue"><i class="bi bi-droplet"></i></div>
                 </div>
             </div>
         </div>
         <div class="col-6 col-md-3">
-            <div class="kpi-card green">
+            <div class="kpi-card {% if ultima_leitura.cor_uh and ultima_leitura.cor_uh <= 15 %}green{% elif ultima_leitura.cor_uh %}red{% else %}blue{% endif %}">
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
-                        <div class="kpi-label">Vazão</div>
-                        <div class="kpi-value">
-                            {% if ultima_leitura %}{{ ultima_leitura.vazao_ls|floatformat:1 }}{% else %}--{% endif %}
-                        </div>
-                        <div class="kpi-unit">L/s</div>
+                        <div class="kpi-label">Cor Aparente</div>
+                        <div class="kpi-value">{% if ultima_leitura and ultima_leitura.cor_uh %}{{ ultima_leitura.cor_uh|floatformat:1 }}{% else %}--{% endif %}</div>
+                        <div class="kpi-unit">uH · limite 15</div>
                     </div>
-                    <div class="kpi-icon green"><i class="bi bi-water"></i></div>
+                    <div class="kpi-icon {% if ultima_leitura.cor_uh and ultima_leitura.cor_uh <= 15 %}green{% elif ultima_leitura.cor_uh %}red{% else %}blue{% endif %}"><i class="bi bi-palette"></i></div>
                 </div>
             </div>
         </div>
         <div class="col-6 col-md-3">
-            <div class="kpi-card orange">
+            <div class="kpi-card {% if ultima_leitura.ph and ultima_leitura.ph >= 6.0 and ultima_leitura.ph <= 9.5 %}green{% elif ultima_leitura.ph %}red{% else %}blue{% endif %}">
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
-                        <div class="kpi-label">Nível</div>
-                        <div class="kpi-value">
-                            {% if ultima_leitura %}{{ ultima_leitura.nivel_cm|floatformat:0 }}{% else %}--{% endif %}
-                        </div>
-                        <div class="kpi-unit">cm</div>
+                        <div class="kpi-label">pH</div>
+                        <div class="kpi-value">{% if ultima_leitura and ultima_leitura.ph %}{{ ultima_leitura.ph|floatformat:2 }}{% else %}--{% endif %}</div>
+                        <div class="kpi-unit">6,0 – 9,5</div>
                     </div>
-                    <div class="kpi-icon orange"><i class="bi bi-rulers"></i></div>
+                    <div class="kpi-icon {% if ultima_leitura.ph and ultima_leitura.ph >= 6.0 and ultima_leitura.ph <= 9.5 %}green{% elif ultima_leitura.ph %}red{% else %}blue{% endif %}"><i class="bi bi-activity"></i></div>
                 </div>
             </div>
         </div>
         <div class="col-6 col-md-3">
-            <div class="kpi-card {% if ultima_leitura.status_conformidade %}green{% else %}red{% endif %}">
+            <div class="kpi-card {% if ultima_leitura.cloro_residual_mgl and ultima_leitura.cloro_residual_mgl >= 0.2 and ultima_leitura.cloro_residual_mgl <= 5.0 %}green{% elif ultima_leitura.cloro_residual_mgl %}red{% else %}blue{% endif %}">
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
-                        <div class="kpi-label">Status</div>
-                        <div class="kpi-value" style="font-size:1.3rem; margin-top:6px;">
-                            {% if ultima_leitura %}
-                                {% if ultima_leitura.status_conformidade %}Conforme{% else %}Alerta{% endif %}
-                            {% else %}--{% endif %}
-                        </div>
-                        <div class="kpi-unit">Portaria 888/2021</div>
+                        <div class="kpi-label">Cloro Residual</div>
+                        <div class="kpi-value">{% if ultima_leitura and ultima_leitura.cloro_residual_mgl %}{{ ultima_leitura.cloro_residual_mgl|floatformat:2 }}{% else %}--{% endif %}</div>
+                        <div class="kpi-unit">mg/L · 0,2–5,0</div>
                     </div>
-                    <div class="kpi-icon {% if ultima_leitura.status_conformidade %}green{% else %}red{% endif %}">
-                        <i class="bi bi-{% if ultima_leitura.status_conformidade %}shield-check{% else %}exclamation-triangle{% endif %}"></i>
-                    </div>
+                    <div class="kpi-icon {% if ultima_leitura.cloro_residual_mgl and ultima_leitura.cloro_residual_mgl >= 0.2 and ultima_leitura.cloro_residual_mgl <= 5.0 %}green{% elif ultima_leitura.cloro_residual_mgl %}red{% else %}blue{% endif %}"><i class="bi bi-shield-check"></i></div>
                 </div>
             </div>
         </div>
@@ -391,20 +386,40 @@
             <table class="table table-hover mb-0">
                 <thead>
                     <tr>
-                        <th>Horário</th>
-                        <th>Turbidez (NTU)</th>
-                        <th>Vazão (L/s)</th>
-                        <th>Nível (cm)</th>
+                        <th>Data</th>
+                        <th>Ponto</th>
+                        <th>Turbidez T. (NTU)</th>
+                        <th>Turbidez B. (NTU)</th>
+                        <th>pH T.</th>
+                        <th>pH B.</th>
+                        <th>Cloro (mg/L)</th>
+                        <th>Cor T. (uH)</th>
+                        <th>Cor B. (uH)</th>
+                        <th>Coliformes</th>
                         <th>Status</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for leitura in leituras %}
                     <tr>
-                        <td>{{ leitura.horario|date:"d/m/Y H:i:s" }}</td>
+                        <td>{{ leitura.horario|date:"d/m/Y" }}</td>
+                        <td>
+                            {% if leitura.ponto_coleta == 'agua_tratada' %}
+                                <span style="background:#dbeafe;color:#1d4ed8;font-size:0.7rem;padding:2px 7px;border-radius:999px;font-weight:600;">Tratada</span>
+                            {% elif leitura.ponto_coleta == 'agua_bruta' %}
+                                <span style="background:#ffedd5;color:#c2410c;font-size:0.7rem;padding:2px 7px;border-radius:999px;font-weight:600;">Bruta</span>
+                            {% else %}
+                                <span style="color:#94a3b8;font-size:0.78rem;">—</span>
+                            {% endif %}
+                        </td>
                         <td>{{ leitura.turbidez_ntu|floatformat:2 }}</td>
-                        <td>{{ leitura.vazao_ls|floatformat:1 }}</td>
-                        <td>{{ leitura.nivel_cm|floatformat:0 }}</td>
+                        <td>{% if leitura.turbidez_bruta_ntu %}{{ leitura.turbidez_bruta_ntu|floatformat:1 }}{% else %}<span style="color:#cbd5e1">—</span>{% endif %}</td>
+                        <td>{% if leitura.ph %}{{ leitura.ph|floatformat:2 }}{% else %}<span style="color:#cbd5e1">—</span>{% endif %}</td>
+                        <td>{% if leitura.ph_bruto %}{{ leitura.ph_bruto|floatformat:2 }}{% else %}<span style="color:#cbd5e1">—</span>{% endif %}</td>
+                        <td>{% if leitura.cloro_residual_mgl %}{{ leitura.cloro_residual_mgl|floatformat:2 }}{% else %}<span style="color:#cbd5e1">—</span>{% endif %}</td>
+                        <td>{% if leitura.cor_uh %}{{ leitura.cor_uh|floatformat:1 }}{% else %}<span style="color:#cbd5e1">—</span>{% endif %}</td>
+                        <td>{% if leitura.cor_bruta_uh %}{{ leitura.cor_bruta_uh|floatformat:1 }}{% else %}<span style="color:#cbd5e1">—</span>{% endif %}</td>
+                        <td>{% if leitura.coliformes_ufc is not None %}{{ leitura.coliformes_ufc|floatformat:0 }}{% else %}<span style="color:#cbd5e1">—</span>{% endif %}</td>
                         <td>
                             {% if leitura.status_conformidade %}
                                 <span class="badge-ok">Conforme</span>
@@ -415,7 +430,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="5" class="text-center text-muted py-4">Nenhuma leitura registrada.</td>
+                        <td colspan="11" class="text-center text-muted py-4">Nenhuma leitura registrada.</td>
                     </tr>
                     {% endfor %}
                 </tbody>

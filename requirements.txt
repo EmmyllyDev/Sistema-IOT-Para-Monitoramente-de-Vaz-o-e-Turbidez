@@ -4,3 +4,6 @@ psycopg2-binary
 numpy
 streamlit
 plotly
+django-rest-framework
+postgresql
+
