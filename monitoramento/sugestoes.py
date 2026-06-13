@@ -1,5 +1,36 @@
+from monitoramento.ia.modelo_dosagem import recomendar_dosagem
+from monitoramento.ia.detector_anomalias import detectar
+
+
 def gerar_sugestoes(leitura):
     sugestoes = []
+
+    # Detecção de anomalias
+    resultado_anomalia = detectar(leitura)
+    if resultado_anomalia['anomalia']:
+        for alerta in resultado_anomalia['alertas']:
+            sugestoes.append({
+                'parametro': 'Anomalia Detectada',
+                'valor': f"Score: {resultado_anomalia['score']}" if resultado_anomalia['score'] is not None else 'Regra violada',
+                'status': 'critico',
+                'mensagem': alerta,
+                'modo': resultado_anomalia['modo'],
+                'modo_label': 'Isolation Forest' if resultado_anomalia['modo'] == 'isolation_forest' else 'Verificação por regras',
+                'tipo': 'anomalia',
+            })
+
+    # Recomendação de dosagem de coagulante via ML / fórmula especialista
+    recomendacao = recomendar_dosagem(leitura)
+    if recomendacao:
+        modo_label = "Modelo ML" if recomendacao['modo'] == 'ml' else "Estimativa especialista"
+        sugestoes.append({
+            'parametro': 'Dosagem de Coagulante',
+            'valor': f"{recomendacao['dose_mgl']} mg/L de sulfato de alumínio",
+            'status': 'info',
+            'mensagem': recomendacao['justificativa'],
+            'modo': recomendacao['modo'],
+            'modo_label': modo_label,
+        })
 
     # Turbidez
     if leitura.turbidez_ntu > 5.0:
