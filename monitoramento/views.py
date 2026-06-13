@@ -6,7 +6,10 @@ from django.shortcuts import render, redirect
 from django.contrib import messages, auth
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
+import csv
 from datetime import datetime
+from django.db.models import Avg, Count, Q
+from django.http import HttpResponse
 from .models import LeituraSensor
 from .sugestoes import gerar_sugestoes
 import json
@@ -169,3 +172,159 @@ def registrar_feedback(request, pk):
 
     messages.success(request, 'Feedback registrado com sucesso.')
     return redirect('dashboard')
+
+
+# ── Campos exibidos no relatório ────────────────────────────
+CAMPOS_RELATORIO = [
+    ('horario',               'Data/Hora'),
+    ('operador',              'Operador'),
+    ('turbidez_ntu',          'Turbidez Tratada (NTU)'),
+    ('cor_uh',                'Cor Tratada (uH)'),
+    ('ph',                    'pH Tratado'),
+    ('cloro_residual_mgl',    'Cloro Residual (mg/L)'),
+    ('coliformes_ufc',        'Coliformes (UFC/100mL)'),
+    ('alcalinidade_tratada',  'Alcalinidade Tratada (mg/L)'),
+    ('turbidez_bruta_ntu',    'Turbidez Bruta (NTU)'),
+    ('cor_bruta_uh',          'Cor Bruta (uH)'),
+    ('ph_bruto',              'pH Bruto'),
+    ('alcalinidade_bruta',    'Alcalinidade Bruta (mg/L)'),
+    ('vazao_ls',              'Vazão (L/s)'),
+    ('vazao_m3_dia',          'Vazão Entrada (M³/dia)'),
+    ('sulfato_aluminio_kg',   'Sulfato Al. (Kg)'),
+    ('policloreto_aluminio_l','PAC (L)'),
+    ('hipoclorito_sodio_kg',  'Hipoclorito (Kg)'),
+    ('status_conformidade',   'Conformidade'),
+]
+
+CAMPOS_MEDIA = [
+    'turbidez_ntu', 'cor_uh', 'ph', 'cloro_residual_mgl',
+    'coliformes_ufc', 'alcalinidade_tratada',
+    'turbidez_bruta_ntu', 'cor_bruta_uh', 'ph_bruto', 'alcalinidade_bruta',
+    'vazao_ls', 'vazao_m3_dia',
+    'sulfato_aluminio_kg', 'policloreto_aluminio_l', 'hipoclorito_sodio_kg',
+]
+
+
+def _calcular_medias(qs):
+    agg = {f: Avg(f) for f in CAMPOS_MEDIA}
+    resultado = qs.aggregate(**agg)
+    medias = {}
+    for campo in CAMPOS_MEDIA:
+        val = resultado.get(campo)
+        medias[campo] = round(val, 2) if val is not None else None
+    return medias
+
+
+@login_required
+def relatorio(request):
+    qs = LeituraSensor.objects.exclude(horario=None).order_by('-horario')
+
+    # Filtros — padrão: mês e ano atuais
+    agora = datetime.now()
+    mes      = request.GET.get('mes', str(agora.month))
+    ano      = request.GET.get('ano', str(agora.year))
+    operador = request.GET.get('operador', '').strip()
+
+    if ano and ano.isdigit():
+        qs = qs.filter(horario__year=int(ano))
+    if mes and mes.isdigit():
+        qs = qs.filter(horario__month=int(mes))
+    if operador:
+        qs = qs.filter(operador__icontains=operador)
+
+    # Médias do período filtrado
+    medias = _calcular_medias(qs)
+
+    # Total e conformidade
+    total = qs.count()
+    conformes = qs.filter(status_conformidade=True).count()
+
+    # Média de amostras por mês
+    meses_com_dados = qs.dates('horario', 'month').count()
+    media_mes = round(total / meses_com_dados, 1) if meses_com_dados > 0 else total
+
+    # Anos disponíveis para o filtro
+    anos_disponiveis = (
+        LeituraSensor.objects.exclude(horario=None)
+        .dates('horario', 'year')
+    )
+    anos = [d.year for d in anos_disponiveis]
+
+    meses = [
+        (1,'Janeiro'),(2,'Fevereiro'),(3,'Março'),(4,'Abril'),
+        (5,'Maio'),(6,'Junho'),(7,'Julho'),(8,'Agosto'),
+        (9,'Setembro'),(10,'Outubro'),(11,'Novembro'),(12,'Dezembro'),
+    ]
+
+    return render(request, 'monitoramento/relatorio.html', {
+        'leituras':      qs[:500],
+        'medias':        medias,
+        'campos':        CAMPOS_RELATORIO,
+        'total':         total,
+        'conformes':     conformes,
+        'media_mes':     media_mes,
+        'mes_sel':       mes,
+        'ano_sel':       ano,
+        'operador_sel':  operador,
+        'anos':          anos,
+        'meses':         meses,
+        'campos_media':  CAMPOS_MEDIA,
+    })
+
+
+@login_required
+def exportar_csv(request):
+    qs = LeituraSensor.objects.exclude(horario=None).order_by('-horario')
+
+    mes      = request.GET.get('mes', '')
+    ano      = request.GET.get('ano', '')
+    operador = request.GET.get('operador', '').strip()
+
+    if ano and ano.isdigit():
+        qs = qs.filter(horario__year=int(ano))
+    if mes and mes.isdigit():
+        qs = qs.filter(horario__month=int(mes))
+    if operador:
+        qs = qs.filter(operador__icontains=operador)
+
+    response = HttpResponse(content_type='text/csv; charset=utf-8')
+    response['Content-Disposition'] = 'attachment; filename="relatorio_sigua.csv"'
+    response.write('﻿')  # BOM para Excel abrir corretamente
+
+    writer = csv.writer(response, delimiter=';')
+
+    # Cabeçalho
+    cabecalho = [label for _, label in CAMPOS_RELATORIO]
+    writer.writerow(cabecalho)
+
+    # Dados
+    for l in qs:
+        linha = []
+        for campo, _ in CAMPOS_RELATORIO:
+            val = getattr(l, campo, '')
+            if campo == 'horario' and val:
+                val = val.strftime('%d/%m/%Y %H:%M')
+            elif campo == 'status_conformidade':
+                val = 'Conforme' if val else 'Não conforme'
+            elif val is None:
+                val = ''
+            linha.append(val)
+        writer.writerow(linha)
+
+    # Linha em branco + médias
+    writer.writerow([])
+    medias = _calcular_medias(qs)
+    media_linha = ['MÉDIA DO PERÍODO', '']
+    for campo, _ in CAMPOS_RELATORIO[2:]:  # pula horario e operador
+        if campo in medias:
+            val = medias[campo]
+            media_linha.append(val if val is not None else '')
+        elif campo == 'status_conformidade':
+            total = qs.count()
+            conformes = qs.filter(status_conformidade=True).count()
+            media_linha.append(f'{conformes}/{total} conformes')
+        else:
+            media_linha.append('')
+    writer.writerow(media_linha)
+
+    return response

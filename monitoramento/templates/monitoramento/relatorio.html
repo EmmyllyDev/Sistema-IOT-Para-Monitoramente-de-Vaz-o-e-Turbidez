@@ -1,0 +1,313 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIGUÁ — Relatório</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        *, body { font-family: 'Inter', sans-serif; }
+        body { background: #f1f5f9; overflow-x: hidden; }
+
+        .sidebar { position: fixed; top: 0; left: 0; width: 220px; height: 100vh; background: #0f2744; display: flex; flex-direction: column; z-index: 100; }
+        .sidebar-brand { padding: 20px 20px 16px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+        .sidebar-brand .brand-name { color: #fff; font-size: 1.1rem; font-weight: 700; letter-spacing: 0.05em; }
+        .sidebar-brand .brand-sub  { color: #94a3b8; font-size: 0.7rem; line-height: 1.3; margin-top: 2px; }
+        .sidebar-nav { padding: 16px 12px; flex: 1; }
+        .sidebar-label { color: #475569; font-size: 0.65rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; padding: 0 8px; margin-bottom: 6px; margin-top: 12px; }
+        .nav-item-link { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 8px; color: #94a3b8; text-decoration: none; font-size: 0.85rem; font-weight: 500; transition: background 0.15s, color 0.15s; margin-bottom: 2px; }
+        .nav-item-link:hover  { background: rgba(255,255,255,0.06); color: #e2e8f0; }
+        .nav-item-link.active { background: rgba(37,99,235,0.25); color: #93c5fd; }
+        .nav-item-link i { font-size: 1rem; width: 18px; text-align: center; }
+        .sidebar-footer { padding: 16px; border-top: 1px solid rgba(255,255,255,0.08); }
+        .sidebar-footer small { color: #475569; font-size: 0.7rem; }
+
+        .main-content { margin-left: 220px; padding: 28px 28px 40px; min-height: 100vh; }
+
+        /* Cards de resumo */
+        .resumo-card {
+            background: #fff; border-radius: 12px; padding: 16px 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+        }
+        .resumo-card .label { font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: #94a3b8; }
+        .resumo-card .valor { font-size: 1.6rem; font-weight: 700; color: #0f172a; margin: 2px 0; }
+        .resumo-card .sub   { font-size: 0.78rem; color: #64748b; }
+
+        /* Filtros */
+        .filtro-card { background: #fff; border-radius: 12px; padding: 18px 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); margin-bottom: 20px; }
+        .form-select, .form-control { font-size: 0.82rem; border-color: #e2e8f0; border-radius: 8px; }
+        .form-select:focus, .form-control:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.12); }
+
+        /* Tabela */
+        .tabela-card { background: #fff; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); overflow: hidden; }
+        .table-wrapper { overflow-x: auto; }
+        table { font-size: 0.78rem; margin: 0; }
+        thead th {
+            background: #0f2744; color: #e2e8f0;
+            font-size: 0.68rem; font-weight: 600; text-transform: uppercase;
+            letter-spacing: 0.05em; padding: 10px 12px;
+            white-space: nowrap; border: none;
+        }
+        tbody td { padding: 8px 12px; border-color: #f1f5f9; white-space: nowrap; vertical-align: middle; color: #334155; }
+        tbody tr:hover { background: #f8faff; }
+
+        /* Linha de médias */
+        .linha-media td {
+            background: #0f2744 !important;
+            color: #e2e8f0 !important;
+            font-weight: 700;
+            font-size: 0.78rem;
+            border-top: 2px solid #2563eb !important;
+        }
+
+        /* Badge conformidade */
+        .badge-ok     { background: #dcfce7; color: #15803d; font-size: 0.68rem; padding: 3px 8px; border-radius: 999px; font-weight: 600; }
+        .badge-alerta { background: #fee2e2; color: #b91c1c; font-size: 0.68rem; padding: 3px 8px; border-radius: 999px; font-weight: 600; }
+
+        .btn-filtrar { background: #2563eb; color: #fff; border: none; border-radius: 8px; padding: 8px 18px; font-size: 0.82rem; font-weight: 600; }
+        .btn-filtrar:hover { background: #1d4ed8; color: #fff; }
+        .btn-limpar  { background: #f1f5f9; color: #475569; border: none; border-radius: 8px; padding: 8px 14px; font-size: 0.82rem; }
+        .btn-csv     { background: #059669; color: #fff; border: none; border-radius: 8px; padding: 8px 16px; font-size: 0.82rem; font-weight: 600; }
+        .btn-csv:hover { background: #047857; color: #fff; }
+
+        .sem-dados { text-align: center; padding: 40px; color: #94a3b8; font-size: 0.88rem; }
+
+        @media (max-width: 768px) {
+            .sidebar { width: 100%; height: auto; position: relative; }
+            .main-content { margin-left: 0; padding: 16px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+    <div class="sidebar-brand">
+        <div class="brand-name">💧 SIGUÁ</div>
+        <div class="brand-sub">ETA Júlio Campos<br>DAE Várzea Grande — MT</div>
+    </div>
+    <nav class="sidebar-nav">
+        <div class="sidebar-label">Principal</div>
+        <a href="{% url 'dashboard' %}" class="nav-item-link"><i class="bi bi-speedometer2"></i> Dashboard</a>
+        <a href="{% url 'nova_leitura' %}" class="nav-item-link"><i class="bi bi-plus-circle"></i> Nova Leitura</a>
+        <a href="{% url 'relatorio' %}" class="nav-item-link active"><i class="bi bi-file-earmark-bar-graph"></i> Relatório</a>
+        <div class="sidebar-label">Sistema</div>
+        <a href="#" class="nav-item-link"><i class="bi bi-sliders"></i> Configurações</a>
+        <a href="{% url 'logout' %}" class="nav-item-link"><i class="bi bi-box-arrow-right"></i> Sair</a>
+    </nav>
+    <div class="sidebar-footer">
+        <div style="color:#e2e8f0; font-size:0.78rem; font-weight:600;">
+            <i class="bi bi-person-circle me-1"></i>
+            {{ request.user.get_full_name|default:request.user.username }}
+        </div>
+        <small>Portaria GM/MS nº 888/2021</small>
+    </div>
+</aside>
+
+<!-- CONTEÚDO -->
+<main class="main-content">
+
+    <div class="d-flex justify-content-between align-items-start mb-4">
+        <div>
+            <div style="font-size:1.15rem; font-weight:700; color:#0f172a;">Relatório de Leituras</div>
+            <div style="font-size:0.8rem; color:#64748b; margin-top:2px;">
+                Histórico de monitoramento — ETA Júlio Campos
+            </div>
+        </div>
+        <a href="{% url 'exportar_csv' %}?mes={{ mes_sel }}&ano={{ ano_sel }}&operador={{ operador_sel }}"
+           class="btn btn-csv">
+            <i class="bi bi-file-earmark-spreadsheet me-1"></i> Exportar CSV
+        </a>
+    </div>
+
+    <!-- Linha 1: contagens do mês -->
+    <div class="row g-3 mb-3">
+        <div class="col-md-6">
+            <div class="resumo-card" style="border-left: 3px solid #0f2744;">
+                <div class="label">Amostras Realizadas no Mês</div>
+                <div class="valor">{{ total }}</div>
+                <div class="sub">coletas registradas no período</div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="resumo-card" style="border-left: 3px solid #15803d;">
+                <div class="label">Amostras em Conformidade</div>
+                <div class="valor" style="color:#15803d;">{{ conformes }}
+                    <span style="font-size:1rem; font-weight:400; color:#64748b;">/ {{ total }}</span>
+                </div>
+                <div class="sub">dentro dos limites da Portaria GM/MS nº 888/2021</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Linha 2: médias do mês por parâmetro -->
+    <div style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:#94a3b8; margin-bottom:10px;">
+        Média do Mês — Parâmetros Principais (Água Tratada)
+    </div>
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="resumo-card" style="border-left: 3px solid #2563eb;">
+                <div class="label">Turbidez — Média/Mês</div>
+                <div class="valor" style="color:#2563eb;">{{ medias.turbidez_ntu|default:"—" }}</div>
+                <div class="sub">NTU &nbsp;·&nbsp; limite: ≤ 5,0 NTU</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="resumo-card" style="border-left: 3px solid #7c3aed;">
+                <div class="label">Cor Aparente — Média/Mês</div>
+                <div class="valor" style="color:#7c3aed;">{{ medias.cor_uh|default:"—" }}</div>
+                <div class="sub">uH &nbsp;·&nbsp; limite: ≤ 15 uH</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="resumo-card" style="border-left: 3px solid #059669;">
+                <div class="label">pH — Média/Mês</div>
+                <div class="valor" style="color:#059669;">{{ medias.ph|default:"—" }}</div>
+                <div class="sub">limite: 6,0 – 9,5</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="resumo-card" style="border-left: 3px solid #d97706;">
+                <div class="label">Cloro Residual — Média/Mês</div>
+                <div class="valor" style="color:#d97706;">{{ medias.cloro_residual_mgl|default:"—" }}</div>
+                <div class="sub">mg/L &nbsp;·&nbsp; limite: 0,2 – 5,0</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="filtro-card">
+        <form method="GET" class="row g-2 align-items-end">
+            <div class="col-md-2">
+                <label style="font-size:0.75rem; font-weight:600; color:#475569; display:block; margin-bottom:4px;">Mês</label>
+                <select name="mes" class="form-select">
+                    <option value="">Todos</option>
+                    {% for num, nome in meses %}
+                    <option value="{{ num }}" {% if mes_sel == num|stringformat:"s" %}selected{% endif %}>{{ nome }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label style="font-size:0.75rem; font-weight:600; color:#475569; display:block; margin-bottom:4px;">Ano</label>
+                <select name="ano" class="form-select">
+                    <option value="">Todos</option>
+                    {% for a in anos %}
+                    <option value="{{ a }}" {% if ano_sel == a|stringformat:"s" %}selected{% endif %}>{{ a }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label style="font-size:0.75rem; font-weight:600; color:#475569; display:block; margin-bottom:4px;">Operador</label>
+                <input type="text" name="operador" class="form-control" placeholder="Filtrar por operador" value="{{ operador_sel }}">
+            </div>
+            <div class="col-md-auto">
+                <button type="submit" class="btn btn-filtrar"><i class="bi bi-funnel me-1"></i> Filtrar</button>
+            </div>
+            <div class="col-md-auto">
+                <a href="{% url 'relatorio' %}" class="btn btn-limpar">Limpar</a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Tabela -->
+    <div class="tabela-card">
+        <div class="table-wrapper">
+            {% if leituras %}
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Data/Hora</th>
+                        <th>Operador</th>
+                        <th>Turbidez Trat. (NTU)</th>
+                        <th>Cor Trat. (uH)</th>
+                        <th>pH Trat.</th>
+                        <th>Cloro (mg/L)</th>
+                        <th>Coliformes (UFC)</th>
+                        <th>Alcal. Trat.</th>
+                        <th>Turbidez Bruta (NTU)</th>
+                        <th>Cor Bruta (uH)</th>
+                        <th>pH Bruto</th>
+                        <th>Alcal. Bruta</th>
+                        <th>Vazão (L/s)</th>
+                        <th>Vazão Ent. (M³/dia)</th>
+                        <th>Sulfato Al. (Kg)</th>
+                        <th>PAC (L)</th>
+                        <th>Hipoclorito (Kg)</th>
+                        <th>Conformidade</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for l in leituras %}
+                    <tr>
+                        <td>{{ l.horario|date:"d/m/Y H:i" }}</td>
+                        <td>{{ l.operador|default:"—" }}</td>
+                        <td>{{ l.turbidez_ntu|floatformat:2|default:"—" }}</td>
+                        <td>{{ l.cor_uh|floatformat:1|default:"—" }}</td>
+                        <td>{{ l.ph|floatformat:2|default:"—" }}</td>
+                        <td>{{ l.cloro_residual_mgl|floatformat:2|default:"—" }}</td>
+                        <td>{{ l.coliformes_ufc|floatformat:0|default:"—" }}</td>
+                        <td>{{ l.alcalinidade_tratada|floatformat:1|default:"—" }}</td>
+                        <td>{{ l.turbidez_bruta_ntu|floatformat:2|default:"—" }}</td>
+                        <td>{{ l.cor_bruta_uh|floatformat:1|default:"—" }}</td>
+                        <td>{{ l.ph_bruto|floatformat:2|default:"—" }}</td>
+                        <td>{{ l.alcalinidade_bruta|floatformat:1|default:"—" }}</td>
+                        <td>{{ l.vazao_ls|floatformat:1|default:"—" }}</td>
+                        <td>{{ l.vazao_m3_dia|floatformat:0|default:"—" }}</td>
+                        <td>{{ l.sulfato_aluminio_kg|floatformat:1|default:"—" }}</td>
+                        <td>{{ l.policloreto_aluminio_l|floatformat:1|default:"—" }}</td>
+                        <td>{{ l.hipoclorito_sodio_kg|floatformat:1|default:"—" }}</td>
+                        <td>
+                            {% if l.status_conformidade %}
+                                <span class="badge-ok">Conforme</span>
+                            {% else %}
+                                <span class="badge-alerta">Não conforme</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+
+                    <!-- LINHA DE MÉDIAS -->
+                    <tr class="linha-media">
+                        <td colspan="2">MÉDIA DO PERÍODO ({{ total }} leituras)</td>
+                        <td>{{ medias.turbidez_ntu|default:"—" }}</td>
+                        <td>{{ medias.cor_uh|default:"—" }}</td>
+                        <td>{{ medias.ph|default:"—" }}</td>
+                        <td>{{ medias.cloro_residual_mgl|default:"—" }}</td>
+                        <td>{{ medias.coliformes_ufc|default:"—" }}</td>
+                        <td>{{ medias.alcalinidade_tratada|default:"—" }}</td>
+                        <td>{{ medias.turbidez_bruta_ntu|default:"—" }}</td>
+                        <td>{{ medias.cor_bruta_uh|default:"—" }}</td>
+                        <td>{{ medias.ph_bruto|default:"—" }}</td>
+                        <td>{{ medias.alcalinidade_bruta|default:"—" }}</td>
+                        <td>{{ medias.vazao_ls|default:"—" }}</td>
+                        <td>{{ medias.vazao_m3_dia|default:"—" }}</td>
+                        <td>{{ medias.sulfato_aluminio_kg|default:"—" }}</td>
+                        <td>{{ medias.policloreto_aluminio_l|default:"—" }}</td>
+                        <td>{{ medias.hipoclorito_sodio_kg|default:"—" }}</td>
+                        <td>{{ conformes }}/{{ total }} conformes</td>
+                    </tr>
+                </tbody>
+            </table>
+            {% else %}
+            <div class="sem-dados">
+                <i class="bi bi-inbox" style="font-size:2rem; display:block; margin-bottom:8px;"></i>
+                Nenhuma leitura encontrada para o período selecionado.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if total > 500 %}
+    <div style="font-size:0.75rem; color:#94a3b8; margin-top:10px; text-align:right;">
+        Exibindo os 500 registros mais recentes. Use os filtros ou exporte o CSV para ver todos.
+    </div>
+    {% endif %}
+
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
