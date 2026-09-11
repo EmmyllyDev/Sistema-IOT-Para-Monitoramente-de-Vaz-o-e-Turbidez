@@ -1,9 +1,9 @@
-sqlalchemy
-python-dotenv
+django
+djangorestframework
 psycopg2-binary
+python-dotenv
 numpy
-streamlit
+pandas
+scikit-learn
+matplotlib
 plotly
-django-rest-framework
-postgresql
-
