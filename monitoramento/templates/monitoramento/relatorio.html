@@ -1,316 +1,670 @@
-﻿{% load static %}
+{% load static %}
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SIGUÁ — Relatório</title>
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script>document.documentElement.className += ' js';</script>
+
     <style>
-        *, body { font-family: 'Inter', sans-serif; }
-        body { background: #f1f5f9; overflow-x: hidden; }
+        :root {
+            --field:      #080b12;
+            --glass:      rgba(255, 255, 255, .055);
+            --glass-2:    rgba(255, 255, 255, .035);
+            --glass-edge: rgba(255, 255, 255, .085);
+            --glass-top:  rgba(255, 255, 255, .14);
 
-        .sidebar { position: fixed; top: 0; left: 0; width: 220px; height: 100vh; background: #0f2744; display: flex; flex-direction: column; z-index: 100; }
-        .sidebar-brand { padding: 20px 20px 16px; border-bottom: 1px solid rgba(255,255,255,0.08); }
-        .sidebar-brand .brand-name { color: #fff; font-size: 1.1rem; font-weight: 700; letter-spacing: 0.05em; }
-        .sidebar-brand .brand-sub  { color: #94a3b8; font-size: 0.7rem; line-height: 1.3; margin-top: 2px; }
-        .sidebar-nav { padding: 16px 12px; flex: 1; }
-        .sidebar-label { color: #475569; font-size: 0.65rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; padding: 0 8px; margin-bottom: 6px; margin-top: 12px; }
-        .nav-item-link { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 8px; color: #94a3b8; text-decoration: none; font-size: 0.85rem; font-weight: 500; transition: background 0.15s, color 0.15s; margin-bottom: 2px; }
-        .nav-item-link:hover  { background: rgba(255,255,255,0.06); color: #e2e8f0; }
-        .nav-item-link.active { background: rgba(37,99,235,0.25); color: #93c5fd; }
-        .nav-item-link i { font-size: 1rem; width: 18px; text-align: center; }
-        .sidebar-footer { padding: 16px; border-top: 1px solid rgba(255,255,255,0.08); }
-        .sidebar-footer small { color: #475569; font-size: 0.7rem; }
+            --ink:    #f5f7fa;
+            --ink-2:  #9aa6b8;
+            --ink-3:  #7886a0;
 
-        .main-content { margin-left: 220px; padding: 28px 28px 40px; min-height: 100vh; }
+            --teal:   #40c8e0;
+            --orange: #ff9f0a;
+            --green:  #30d158;
+            --red:    #ff453a;
+            --blue:   #0a84ff;
 
-        /* Cards de resumo */
-        .resumo-card {
-            background: #fff; border-radius: 12px; padding: 16px 20px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+            --r-lg: 26px;
+            --r-md: 20px;
+            --r-sm: 14px;
+
+            --sidebar-w: 248px;
+            --ease-out: cubic-bezier(.22, 1, .36, 1);
         }
-        .resumo-card .label { font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: #94a3b8; }
-        .resumo-card .valor { font-size: 1.6rem; font-weight: 700; color: #0f172a; margin: 2px 0; }
-        .resumo-card .sub   { font-size: 0.78rem; color: #64748b; }
 
-        /* Filtros */
-        .filtro-card { background: #fff; border-radius: 12px; padding: 18px 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); margin-bottom: 20px; }
-        .form-select, .form-control { font-size: 0.82rem; border-color: #e2e8f0; border-radius: 8px; }
-        .form-select:focus, .form-control:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.12); }
+        * { font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif; }
 
-        /* Tabela */
-        .tabela-card { background: #fff; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); overflow: hidden; }
-        .table-wrapper { overflow-x: auto; }
-        table { font-size: 0.78rem; margin: 0; }
-        thead th {
-            background: #0f2744; color: #e2e8f0;
-            font-size: 0.68rem; font-weight: 600; text-transform: uppercase;
-            letter-spacing: 0.05em; padding: 10px 12px;
-            white-space: nowrap; border: none;
+        body {
+            background: var(--field);
+            color: var(--ink);
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            letter-spacing: -.011em;
         }
-        tbody td { padding: 8px 12px; border-color: #f1f5f9; white-space: nowrap; vertical-align: middle; color: #334155; }
-        tbody tr:hover { background: #f8faff; }
 
-        /* Linha de médias */
+        /* ═══ Aurora ═══ */
+        .aurora { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+        .blob { position: absolute; border-radius: 50%; filter: blur(100px); opacity: 0; will-change: transform, opacity; }
+        .blob-1 { width: 620px; height: 620px; top: -210px; left: -130px;
+                  background: radial-gradient(circle, rgba(64,200,224,.4), transparent 68%); }
+        .blob-2 { width: 560px; height: 560px; top: 22%; right: -170px;
+                  background: radial-gradient(circle, rgba(10,132,255,.32), transparent 68%); }
+        .blob-3 { width: 500px; height: 500px; bottom: -190px; left: 34%;
+                  background: radial-gradient(circle, rgba(94,92,230,.28), transparent 68%); }
+
+        /* ═══ Vidro ═══ */
+        .glass {
+            position: relative;
+            background: var(--glass);
+            border: 1px solid var(--glass-edge);
+            border-radius: var(--r-md);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+        }
+        .glass::before {
+            content: '';
+            position: absolute; top: 0; left: 14px; right: 14px; height: 1px;
+            background: linear-gradient(90deg, transparent, var(--glass-top), transparent);
+            pointer-events: none;
+        }
+
+        /* ═══ Sidebar ═══ */
+        .sidebar {
+            position: fixed; top: 0; left: 0;
+            width: var(--sidebar-w); height: 100vh; z-index: 50;
+            display: flex; flex-direction: column;
+            background: rgba(255, 255, 255, .03);
+            border-right: 1px solid var(--glass-edge);
+            backdrop-filter: blur(24px) saturate(180%);
+            -webkit-backdrop-filter: blur(24px) saturate(180%);
+        }
+        .brand {
+            padding: 22px 22px 20px;
+            display: flex; align-items: center; gap: 13px;
+            border-bottom: 1px solid var(--glass-edge);
+        }
+        .brand img { width: 46px; height: auto; flex-shrink: 0; }
+        .brand-unit { font-size: .7rem; line-height: 1.5; color: var(--ink-2); font-weight: 500; }
+
+        .nav-stack { padding: 20px 14px; flex: 1; }
+        .nav-group { font-size: .68rem; font-weight: 600; color: var(--ink-3); padding: 0 12px; margin: 20px 0 8px; }
+        .nav-group:first-child { margin-top: 0; }
+
+        .nav-link-s {
+            display: flex; align-items: center; gap: 12px;
+            padding: 11px 13px; min-height: 44px;
+            border-radius: var(--r-sm);
+            color: var(--ink-2); text-decoration: none;
+            font-size: .875rem; font-weight: 500;
+            margin-bottom: 3px; cursor: pointer;
+            transition: background .22s var(--ease-out), color .22s var(--ease-out);
+        }
+        .nav-link-s:hover { background: rgba(255,255,255,.06); color: var(--ink); }
+        .nav-link-s.active {
+            background: rgba(64,200,224,.13);
+            border: 1px solid rgba(64,200,224,.22);
+            color: #a8ecf7; font-weight: 600;
+        }
+        .nav-link-s i { font-size: 1.05rem; width: 19px; text-align: center; }
+
+        .nav-foot { padding: 16px 18px; border-top: 1px solid var(--glass-edge); }
+        .who { display: flex; align-items: center; gap: 11px; }
+        .who-badge {
+            width: 34px; height: 34px; border-radius: 50%;
+            background: linear-gradient(135deg, rgba(64,200,224,.3), rgba(10,132,255,.3));
+            border: 1px solid var(--glass-edge);
+            display: flex; align-items: center; justify-content: center;
+            font-size: .74rem; font-weight: 700; flex-shrink: 0;
+        }
+        .who-name { font-size: .82rem; font-weight: 600; }
+        .who-sub  { font-size: .68rem; color: var(--ink-3); }
+
+        /* ═══ Layout ═══ */
+        .shell {
+            position: relative; z-index: 1;
+            margin-left: var(--sidebar-w);
+            padding: 30px 34px 60px;
+            min-height: 100vh;
+        }
+
+        .topo {
+            display: flex; align-items: flex-end; justify-content: space-between;
+            flex-wrap: wrap; gap: 16px; margin-bottom: 24px;
+            opacity: 0;
+        }
+
+        .topo-h {
+            font-size: clamp(1.6rem, 3vw, 2.2rem);
+            font-weight: 700; letter-spacing: -.035em; line-height: 1.12;
+            margin: 0 0 8px;
+        }
+        .topo-p { font-size: .88rem; color: var(--ink-2); margin: 0; }
+
+        .btn-s {
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+            padding: 12px 20px; min-height: 46px;
+            border-radius: 999px;
+            font-size: .865rem; font-weight: 600;
+            text-decoration: none; cursor: pointer;
+            border: 1px solid var(--glass-edge);
+            background: var(--glass-2); color: var(--ink);
+            transition: background .22s var(--ease-out), border-color .22s var(--ease-out);
+        }
+        .btn-s:hover { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.18); color: var(--ink); }
+        .btn-s-fill { background: var(--blue); border-color: var(--blue); color: #fff; }
+        .btn-s-fill:hover { background: #2a96ff; border-color: #2a96ff; color: #fff; }
+
+        /* ═══ Cartões de resumo ═══ */
+        .kpi {
+            padding: 18px 20px;
+            border-radius: var(--r-md);
+            height: 100%;
+            opacity: 0;
+        }
+
+        .kpi-label { font-size: .76rem; font-weight: 600; color: var(--ink-2); }
+
+        .kpi-valor {
+            font-size: 1.9rem; font-weight: 700;
+            letter-spacing: -.04em; line-height: 1.1;
+            margin: 8px 0 3px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .kpi-sub { font-size: .72rem; color: var(--ink-3); font-weight: 500; }
+
+        .kpi-topo {
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 8px; min-height: 20px;
+        }
+
+        .kpi-param { border-left: 3px solid var(--marca, var(--teal)); }
+        .kpi-param.dentro { --marca: var(--green); }
+        .kpi-param.fora   { --marca: var(--red); background: rgba(255,69,58,.07); }
+        .kpi-param.fora .kpi-valor { color: #ff9a93; }
+
+        .kpi-un { font-size: .8rem; font-weight: 600; color: var(--ink-3); margin-left: 4px; }
+
+        .kpi-selo {
+            font-size: .64rem; font-weight: 700;
+            padding: 3px 8px; border-radius: 999px;
+            border: 1px solid transparent; white-space: nowrap;
+        }
+        .kpi-selo.fora { background: rgba(255,69,58,.16); border-color: rgba(255,69,58,.32); color: #ff9a93; }
+
+        .kpi-faixa {
+            display: flex; gap: 12px;
+            margin-top: 10px; padding-top: 9px;
+            border-top: 1px solid rgba(255,255,255,.06);
+            font-size: .68rem;
+        }
+        .kpi-faixa span { color: var(--ink-3); }
+        .kpi-faixa strong { color: var(--ink-2); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+        .kpi-amostras {
+            font-size: .7rem; color: var(--ink-3);
+            margin-top: 9px; padding-top: 9px;
+            border-top: 1px solid rgba(255,255,255,.06);
+            display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+        }
+
+        .conta-ok      { color: var(--green); font-weight: 700; }
+        .conta-parcial { color: var(--ink-2); font-weight: 700; }
+
+        .conta-sensor {
+            display: inline-flex; align-items: center; gap: 3px;
+            font-size: .66rem; font-weight: 600;
+            padding: 2px 7px; border-radius: 999px;
+            background: rgba(64,200,224,.13);
+            border: 1px solid rgba(64,200,224,.26);
+            color: #a8ecf7;
+        }
+        .conta-sensor i { font-size: .72rem; }
+
+        .linha-amostras td {
+            background: rgba(255,255,255,.035) !important;
+            border-top: 1px solid var(--glass-edge);
+            border-bottom: 1px solid rgba(255,255,255,.05);
+            font-size: .8rem; font-weight: 600;
+            color: var(--ink-2);
+        }
+        .linha-amostras .rotulo { color: var(--ink-2); font-weight: 600; }
+        .meta-nota { color: var(--ink-3); font-weight: 500; font-size: .74rem; }
+
+        .kpi-pct {
+            font-size: .82rem; font-weight: 600;
+            color: var(--ink-3); margin-left: 6px;
+        }
+
+        /* ═══ Filtros ═══ */
+        .filtros { padding: 20px 22px; border-radius: var(--r-md); margin-bottom: 18px; opacity: 0; }
+
+        .filtro-label {
+            display: block; font-size: .76rem; font-weight: 600;
+            color: var(--ink-2); margin-bottom: 7px;
+        }
+
+        .filtros select, .filtros input[type="text"] {
+            width: 100%; height: 46px;
+            padding: 0 14px;
+            background: rgba(255,255,255,.04);
+            border: 1px solid var(--glass-edge);
+            border-radius: var(--r-sm);
+            color: var(--ink);
+            font-size: .875rem; font-weight: 600;
+            transition: border-color .22s var(--ease-out), background .22s var(--ease-out);
+        }
+        .filtros select option { background: #121722; color: var(--ink); }
+        .filtros input::placeholder { color: var(--ink-3); font-weight: 400; opacity: .75; }
+        .filtros select:hover, .filtros input:hover { border-color: rgba(255,255,255,.16); }
+        .filtros select:focus, .filtros input:focus {
+            outline: none; border-color: var(--teal);
+            background: rgba(64,200,224,.07);
+            box-shadow: 0 0 0 3px rgba(64,200,224,.16);
+        }
+
+        /* ═══ Tabela ═══ */
+        .tabela-painel { padding: 6px; border-radius: var(--r-lg); opacity: 0; overflow: hidden; }
+
+        .rolagem { overflow-x: auto; border-radius: var(--r-md); }
+
+        .table { margin-bottom: 0; color: var(--ink-2); }
+
+        .table thead th {
+            font-size: .72rem; font-weight: 600;
+            color: var(--ink-3);
+            background: rgba(255,255,255,.03);
+            border: none;
+            border-bottom: 1px solid var(--glass-edge);
+            padding: 11px 13px;
+            white-space: nowrap;
+            vertical-align: middle;
+        }
+
+        /* cabeçalho de grupo (Água tratada / Água bruta) */
+        .grupo-th {
+            text-align: center;
+            font-size: .72rem; font-weight: 700;
+            letter-spacing: .01em;
+            border-bottom: 1px solid var(--glass-edge) !important;
+        }
+        .grupo-tratada { color: #a8ecf7; background: rgba(64,200,224,.09) !important; }
+        .grupo-bruta   { color: #ffce7a; background: rgba(255,159,10,.09) !important; }
+
+        .col-tratada { background: rgba(64,200,224,.035) !important; }
+        .col-bruta   { background: rgba(255,159,10,.035) !important; }
+
+        .table tbody td {
+            font-size: .83rem;
+            color: var(--ink-2);
+            padding: 12px 13px;
+            border: none;
+            border-bottom: 1px solid rgba(255,255,255,.045);
+            vertical-align: middle;
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+            background: transparent;
+        }
+
+        .table tbody tr { transition: background .2s var(--ease-out); }
+        .table tbody tr:hover td { background: rgba(255,255,255,.035); }
+
+        .td-forte { color: var(--ink); font-weight: 600; }
+
         .linha-media td {
-            background: #0f2744 !important;
-            color: #e2e8f0 !important;
+            background: rgba(255,255,255,.05) !important;
+            border-top: 1px solid var(--glass-edge);
+            border-bottom: none;
+            color: var(--ink);
             font-weight: 700;
-            font-size: 0.78rem;
-            border-top: 2px solid #2563eb !important;
+            font-size: .82rem;
+        }
+        .linha-media .rotulo { color: var(--ink-2); font-weight: 600; }
+
+        .tag {
+            font-size: .72rem; padding: 4px 11px;
+            border-radius: 999px; font-weight: 600;
+            border: 1px solid transparent;
+            display: inline-block;
+        }
+        .tag-ok  { background: rgba(48,209,88,.14); border-color: rgba(48,209,88,.28); color: #7ee89b; }
+        .tag-bad { background: rgba(255,69,58,.14); border-color: rgba(255,69,58,.3);  color: #ff9a93; }
+        .tag-res { background: rgba(255,255,255,.06); border-color: var(--glass-edge); color: var(--ink-2); }
+
+        .nil { color: var(--ink-3); opacity: .5; }
+
+        .vazio {
+            padding: 60px 24px; text-align: center;
+        }
+        .vazio i { font-size: 2.2rem; color: var(--ink-3); opacity: .5; display: block; margin-bottom: 14px; }
+        .vazio-h { color: var(--ink-2); font-weight: 600; margin-bottom: 6px; }
+        .vazio-p { color: var(--ink-3); font-size: .83rem; }
+
+        .rodape-nota {
+            font-size: .76rem; color: var(--ink-3);
+            margin-top: 12px; text-align: right;
         }
 
-        /* Badge conformidade */
-        .badge-ok     { background: #dcfce7; color: #15803d; font-size: 0.68rem; padding: 3px 8px; border-radius: 999px; font-weight: 600; }
-        .badge-alerta { background: #fee2e2; color: #b91c1c; font-size: 0.68rem; padding: 3px 8px; border-radius: 999px; font-weight: 600; }
-
-        .btn-filtrar { background: #2563eb; color: #fff; border: none; border-radius: 8px; padding: 8px 18px; font-size: 0.82rem; font-weight: 600; }
-        .btn-filtrar:hover { background: #1d4ed8; color: #fff; }
-        .btn-limpar  { background: #f1f5f9; color: #475569; border: none; border-radius: 8px; padding: 8px 14px; font-size: 0.82rem; }
-        .btn-csv     { background: #059669; color: #fff; border: none; border-radius: 8px; padding: 8px 16px; font-size: 0.82rem; font-weight: 600; }
-        .btn-csv:hover { background: #047857; color: #fff; }
-
-        .sem-dados { text-align: center; padding: 40px; color: #94a3b8; font-size: 0.88rem; }
-
-        @media (max-width: 768px) {
-            .sidebar { width: 100%; height: auto; position: relative; }
-            .main-content { margin-left: 0; padding: 16px; }
+        a:focus-visible, button:focus-visible, select:focus-visible, input:focus-visible {
+            outline: 2px solid var(--teal); outline-offset: 3px;
         }
+
+        /* ═══ Responsivo ═══ */
+        @media (max-width: 992px) {
+            .sidebar {
+                position: relative; width: 100%; height: auto;
+                flex-direction: row; align-items: center;
+                border-right: none; border-bottom: 1px solid var(--glass-edge);
+                overflow-x: auto;
+            }
+            .nav-stack { display: flex; gap: 5px; padding: 12px; flex: 0 1 auto; }
+            .nav-group, .nav-foot { display: none; }
+            .nav-link-s { margin-bottom: 0; white-space: nowrap; }
+            .brand { border-bottom: none; padding: 14px 18px; }
+            .shell { margin-left: 0; padding: 20px 18px 48px; }
+        }
+
+        @media (max-width: 575px) {
+            .shell { padding: 16px 14px 40px; }
+            .filtros { padding: 18px 16px; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            * { animation-duration: .001ms !important; animation-iteration-count: 1 !important; }
+        }
+
+        .js .topo, .js .kpi, .js .filtros, .js .tabela-painel { opacity: 0; }
     </style>
 </head>
 <body>
 
-<!-- SIDEBAR -->
+<div class="aurora" aria-hidden="true">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+</div>
+
+<!-- ═══ SIDEBAR ═══ -->
 <aside class="sidebar">
-    <div class="sidebar-brand" style="padding: 14px 16px 14px; display:flex; align-items:center; gap:12px;">
-        <img src="{% static 'img/Logo.png' %}" alt="SIGUÁ" style="width:54px; height:auto; flex-shrink:0;">
-        <div>
-            <div class="brand-sub" style="color:#e2e8f0; font-size:0.68rem; line-height:1.4; margin-top:0;">ETA Júlio Campos<br>DAE Várzea Grande/MT</div>
-        </div>
+    <div class="brand">
+        <img src="{% static 'img/Logo.png' %}" alt="SIGUÁ">
+        <div class="brand-unit">ETA Júlio Campos<br>DAE Várzea Grande</div>
     </div>
-    <nav class="sidebar-nav">
-        <div class="sidebar-label">Principal</div>
-        <a href="{% url 'dashboard' %}" class="nav-item-link"><i class="bi bi-speedometer2"></i> Dashboard</a>
-        <a href="{% url 'nova_leitura' %}" class="nav-item-link"><i class="bi bi-plus-circle"></i> Nova Leitura</a>
-        <a href="{% url 'relatorio' %}" class="nav-item-link active"><i class="bi bi-file-earmark-bar-graph"></i> Relatório</a>
-        <div class="sidebar-label">Sistema</div>
-        <a href="#" class="nav-item-link"><i class="bi bi-sliders"></i> Configurações</a>
-        <a href="{% url 'logout' %}" class="nav-item-link"><i class="bi bi-box-arrow-right"></i> Sair</a>
+
+    <nav class="nav-stack">
+        <div class="nav-group">Principal</div>
+        <a href="{% url 'dashboard' %}" class="nav-link-s">
+            <i class="bi bi-grid-1x2" aria-hidden="true"></i> Dashboard
+        </a>
+        <a href="{% url 'nova_leitura' %}" class="nav-link-s">
+            <i class="bi bi-plus-circle" aria-hidden="true"></i> Nova leitura
+        </a>
+        <a href="{% url 'relatorio' %}" class="nav-link-s active" aria-current="page">
+            <i class="bi bi-file-earmark-text" aria-hidden="true"></i> Relatório
+        </a>
+
+        <div class="nav-group">Sistema</div>
+        <a href="{% url 'configuracoes' %}" class="nav-link-s">
+            <i class="bi bi-sliders2" aria-hidden="true"></i> Configurações
+        </a>
+        <a href="{% url 'logout' %}" class="nav-link-s">
+            <i class="bi bi-box-arrow-right" aria-hidden="true"></i> Sair
+        </a>
     </nav>
-    <div class="sidebar-footer">
-        <div style="color:#e2e8f0; font-size:0.78rem; font-weight:600;">
-            <i class="bi bi-person-circle me-1"></i>
-            {{ request.user.get_full_name|default:request.user.username }}
+
+    <div class="nav-foot">
+        <div class="who">
+            <span class="who-badge">{{ request.user.username|slice:":2"|upper }}</span>
+            <div>
+                <div class="who-name">{{ request.user.get_full_name|default:request.user.username }}</div>
+                <div class="who-sub">Operador</div>
+            </div>
         </div>
-        <small>Portaria GM/MS nº 888/2021</small>
     </div>
 </aside>
 
-<!-- CONTEÚDO -->
-<main class="main-content">
+<!-- ═══ CONTEÚDO ═══ -->
+<main class="shell">
 
-    <div class="d-flex justify-content-between align-items-start mb-4">
+    <div class="topo" id="topo">
         <div>
-            <div style="font-size:1.15rem; font-weight:700; color:#0f172a;">Relatório de Leituras</div>
-            <div style="font-size:0.8rem; color:#64748b; margin-top:2px;">
-                Histórico de monitoramento — ETA Júlio Campos
-            </div>
+            <h1 class="topo-h">Relatório de leituras</h1>
+            <p class="topo-p">Parâmetros de potabilidade da água bruta e tratada, segundo a Portaria GM/MS nº 888/2021.</p>
         </div>
-        <a href="{% url 'exportar_csv' %}?mes={{ mes_sel }}&ano={{ ano_sel }}&operador={{ operador_sel }}"
-           class="btn btn-csv">
-            <i class="bi bi-file-earmark-spreadsheet me-1"></i> Exportar CSV
+        <a href="{% url 'exportar_csv' %}?mes={{ mes_sel }}&ano={{ ano_sel }}&operador={{ operador_sel|urlencode }}"
+           class="btn-s btn-s-fill">
+            <i class="bi bi-download" aria-hidden="true"></i> Exportar CSV
         </a>
     </div>
 
-    <!-- Linha 1: contagens do mês -->
+    <!-- Resumo -->
     <div class="row g-3 mb-3">
-        <div class="col-md-6">
-            <div class="resumo-card" style="border-left: 3px solid #0f2744;">
-                <div class="label">Amostras Realizadas no Mês</div>
-                <div class="valor">{{ total }}</div>
-                <div class="sub">coletas registradas no período</div>
+        <div class="col-6 col-lg-4 col-xl-2">
+            <div class="kpi glass">
+                <div class="kpi-label">Amostras no período</div>
+                <div class="kpi-valor">{{ total }}</div>
+                <div class="kpi-sub">coletas registradas</div>
             </div>
         </div>
-        <div class="col-md-6">
-            <div class="resumo-card" style="border-left: 3px solid #15803d;">
-                <div class="label">Amostras em Conformidade</div>
-                <div class="valor" style="color:#15803d;">{{ conformes }}
-                    <span style="font-size:1rem; font-weight:400; color:#64748b;">/ {{ total }}</span>
+        <div class="col-6 col-lg-4 col-xl-2">
+            <div class="kpi glass">
+                <div class="kpi-label">Em conformidade</div>
+                <div class="kpi-valor" style="color: var(--green);">
+                    {{ conformes }}{% if total %}<span class="kpi-pct">de {{ total }}</span>{% endif %}
                 </div>
-                <div class="sub">dentro dos limites da Portaria GM/MS nº 888/2021</div>
+                <div class="kpi-sub">dentro dos limites da portaria</div>
             </div>
         </div>
-    </div>
 
-    <!-- Linha 2: médias do mês por parâmetro -->
-    <div style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:#94a3b8; margin-bottom:10px;">
-        Média do Mês — Parâmetros Principais (Água Tratada)
-    </div>
-    <div class="row g-3 mb-4">
-        <div class="col-md-3">
-            <div class="resumo-card" style="border-left: 3px solid #2563eb;">
-                <div class="label">Turbidez — Média/Mês</div>
-                <div class="valor" style="color:#2563eb;">{{ medias.turbidez_ntu|default:"—" }}</div>
-                <div class="sub">NTU &nbsp;·&nbsp; limite: ≤ 5,0 NTU</div>
+        {% for p in destaques %}
+        <div class="col-6 col-lg-4 col-xl-2">
+            <div class="kpi glass kpi-param {% if p.dentro %}dentro{% elif p.dentro is False %}fora{% endif %}">
+                <div class="kpi-topo">
+                    <span class="kpi-label">{{ p.rotulo_media }}</span>
+                    {% if p.dentro is False %}
+                        <span class="kpi-selo fora" title="média fora do limite legal">fora</span>
+                    {% endif %}
+                </div>
+                <div class="kpi-valor">
+                    {% if p.medido %}
+                        {{ p.media|floatformat:p.casas }}{% if p.unidade %}<span class="kpi-un">{{ p.unidade }}</span>{% endif %}
+                    {% else %}
+                        <span class="nil">—</span>
+                    {% endif %}
+                </div>
+                <div class="kpi-sub">Limite: {{ p.limite }}</div>
+                {% if p.medido %}
+                <div class="kpi-faixa" title="menor e maior valor medido no período">
+                    <span>mín <strong>{{ p.minimo|floatformat:p.casas }}</strong></span>
+                    <span>máx <strong>{{ p.maximo|floatformat:p.casas }}</strong></span>
+                </div>
+                {% endif %}
+                <div class="kpi-amostras">
+                    <span class="{% if p.meta_cumprida %}conta-ok{% elif p.amostras %}conta-parcial{% endif %}">{{ p.amostras }}</span>
+                    de {{ p.meta }} amostras
+                    {% if p.amostras_sensor %}
+                        <span class="conta-sensor" title="{{ p.amostras_sensor }} do sensor, {{ p.amostras_operador }} do operador">
+                            <i class="bi bi-cpu" aria-hidden="true"></i>{{ p.amostras_sensor }}
+                        </span>
+                    {% endif %}
+                </div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="resumo-card" style="border-left: 3px solid #7c3aed;">
-                <div class="label">Cor Aparente — Média/Mês</div>
-                <div class="valor" style="color:#7c3aed;">{{ medias.cor_uh|default:"—" }}</div>
-                <div class="sub">uH &nbsp;·&nbsp; limite: ≤ 15 uH</div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="resumo-card" style="border-left: 3px solid #059669;">
-                <div class="label">pH — Média/Mês</div>
-                <div class="valor" style="color:#059669;">{{ medias.ph|default:"—" }}</div>
-                <div class="sub">limite: 6,0 – 9,5</div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="resumo-card" style="border-left: 3px solid #d97706;">
-                <div class="label">Cloro Residual — Média/Mês</div>
-                <div class="valor" style="color:#d97706;">{{ medias.cloro_residual_mgl|default:"—" }}</div>
-                <div class="sub">mg/L &nbsp;·&nbsp; limite: 0,2 – 5,0</div>
-            </div>
-        </div>
+        {% endfor %}
     </div>
 
     <!-- Filtros -->
-    <div class="filtro-card">
-        <form method="GET" class="row g-2 align-items-end">
-            <div class="col-md-2">
-                <label style="font-size:0.75rem; font-weight:600; color:#475569; display:block; margin-bottom:4px;">Mês</label>
-                <select name="mes" class="form-select">
-                    <option value="">Todos</option>
+    <section class="filtros glass">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="filtro-label" for="f_mes">Mês</label>
+                <select name="mes" id="f_mes">
+                    <option value="">Todos os meses</option>
                     {% for num, nome in meses %}
                     <option value="{{ num }}" {% if mes_sel == num|stringformat:"s" %}selected{% endif %}>{{ nome }}</option>
                     {% endfor %}
                 </select>
             </div>
             <div class="col-md-2">
-                <label style="font-size:0.75rem; font-weight:600; color:#475569; display:block; margin-bottom:4px;">Ano</label>
-                <select name="ano" class="form-select">
+                <label class="filtro-label" for="f_ano">Ano</label>
+                <select name="ano" id="f_ano">
                     <option value="">Todos</option>
                     {% for a in anos %}
                     <option value="{{ a }}" {% if ano_sel == a|stringformat:"s" %}selected{% endif %}>{{ a }}</option>
                     {% endfor %}
                 </select>
             </div>
-            <div class="col-md-3">
-                <label style="font-size:0.75rem; font-weight:600; color:#475569; display:block; margin-bottom:4px;">Operador</label>
-                <input type="text" name="operador" class="form-control" placeholder="Filtrar por operador" value="{{ operador_sel }}">
+            <div class="col-md-4">
+                <label class="filtro-label" for="f_op">Operador</label>
+                <input type="text" name="operador" id="f_op" placeholder="Filtrar por nome" value="{{ operador_sel }}">
             </div>
-            <div class="col-md-auto">
-                <button type="submit" class="btn btn-filtrar"><i class="bi bi-funnel me-1"></i> Filtrar</button>
-            </div>
-            <div class="col-md-auto">
-                <a href="{% url 'relatorio' %}" class="btn btn-limpar">Limpar</a>
+            <div class="col-md-3 d-flex gap-2">
+                <button type="submit" class="btn-s btn-s-fill" style="flex:1 1 auto;">
+                    <i class="bi bi-funnel" aria-hidden="true"></i> Filtrar
+                </button>
+                <a href="{% url 'relatorio' %}" class="btn-s">Limpar</a>
             </div>
         </form>
-    </div>
+    </section>
 
     <!-- Tabela -->
-    <div class="tabela-card">
-        <div class="table-wrapper">
-            {% if leituras %}
-            <table class="table table-hover mb-0">
+    <section class="tabela-painel glass">
+        {% if leituras %}
+        <div class="rolagem">
+            <table class="table">
                 <thead>
                     <tr>
-                        <th>Data/Hora</th>
-                        <th>Operador</th>
-                        <th>Turbidez Trat. (NTU)</th>
-                        <th>Cor Trat. (uH)</th>
-                        <th>pH Trat.</th>
-                        <th>Cloro (mg/L)</th>
-                        <th>Coliformes (UFC)</th>
-                        <th>Alcal. Trat.</th>
-                        <th>Turbidez Bruta (NTU)</th>
-                        <th>Cor Bruta (uH)</th>
-                        <th>pH Bruto</th>
-                        <th>Alcal. Bruta</th>
-                        <th>Vazão (L/s)</th>
-                        <th>Vazão Ent. (M³/dia)</th>
-                        <th>Sulfato Al. (Kg)</th>
-                        <th>PAC (L)</th>
-                        <th>Hipoclorito (Kg)</th>
-                        <th>Conformidade</th>
+                        <th rowspan="2">Data e hora</th>
+                        <th rowspan="2">Operador</th>
+                        <th rowspan="2">Reservatório</th>
+                        <th class="grupo-th grupo-tratada" colspan="{{ colunas_tratada|length }}">Água tratada</th>
+                        <th class="grupo-th grupo-bruta" colspan="{{ colunas_bruta|length }}">Água bruta</th>
+                        <th rowspan="2">Situação</th>
+                    </tr>
+                    <tr>
+                        {% for c in colunas_tratada %}
+                            <th class="col-tratada">{{ c.nome }}{% if c.unidade %} <span class="nil">{{ c.unidade }}</span>{% endif %}</th>
+                        {% endfor %}
+                        {% for c in colunas_bruta %}
+                            <th class="col-bruta">{{ c.nome }}{% if c.unidade %} <span class="nil">{{ c.unidade }}</span>{% endif %}</th>
+                        {% endfor %}
                     </tr>
                 </thead>
                 <tbody>
                     {% for l in leituras %}
                     <tr>
-                        <td>{{ l.horario|date:"d/m/Y H:i" }}</td>
-                        <td>{{ l.operador|default:"—" }}</td>
-                        <td>{{ l.turbidez_ntu|floatformat:2|default:"—" }}</td>
-                        <td>{{ l.cor_uh|floatformat:1|default:"—" }}</td>
-                        <td>{{ l.ph|floatformat:2|default:"—" }}</td>
-                        <td>{{ l.cloro_residual_mgl|floatformat:2|default:"—" }}</td>
-                        <td>{{ l.coliformes_ufc|floatformat:0|default:"—" }}</td>
-                        <td>{{ l.alcalinidade_tratada|floatformat:1|default:"—" }}</td>
-                        <td>{{ l.turbidez_bruta_ntu|floatformat:2|default:"—" }}</td>
-                        <td>{{ l.cor_bruta_uh|floatformat:1|default:"—" }}</td>
-                        <td>{{ l.ph_bruto|floatformat:2|default:"—" }}</td>
-                        <td>{{ l.alcalinidade_bruta|floatformat:1|default:"—" }}</td>
-                        <td>{{ l.vazao_ls|floatformat:1|default:"—" }}</td>
-                        <td>{{ l.vazao_m3_dia|floatformat:0|default:"—" }}</td>
-                        <td>{{ l.sulfato_aluminio_kg|floatformat:1|default:"—" }}</td>
-                        <td>{{ l.policloreto_aluminio_l|floatformat:1|default:"—" }}</td>
-                        <td>{{ l.hipoclorito_sodio_kg|floatformat:1|default:"—" }}</td>
+                        <td class="td-forte">{{ l.horario|date:"d/m/Y H:i" }}</td>
+                        <td>{{ l.operador|default_if_none:"—" }}</td>
+                        <td>
+                            {% if l.tipo_reservatorio %}
+                                <span class="tag tag-res">{{ l.get_tipo_reservatorio_display }}</span>
+                            {% else %}
+                                <span class="nil">—</span>
+                            {% endif %}
+                        </td>
+
+                        <td class="col-tratada td-forte">{% if l.turbidez_ntu is not None %}{{ l.turbidez_ntu|floatformat:2 }}{% else %}<span class="nil">—</span>{% endif %}</td>
+                        <td class="col-tratada">{% if l.cor_uh is not None %}{{ l.cor_uh|floatformat:1 }}{% else %}<span class="nil">—</span>{% endif %}</td>
+                        <td class="col-tratada">{% if l.ph is not None %}{{ l.ph|floatformat:2 }}{% else %}<span class="nil">—</span>{% endif %}</td>
+                        <td class="col-tratada">{% if l.cloro_residual_mgl is not None %}{{ l.cloro_residual_mgl|floatformat:2 }}{% else %}<span class="nil">—</span>{% endif %}</td>
+                        <td class="col-tratada">{% if l.coliformes_ufc is not None %}{{ l.coliformes_ufc|floatformat:0 }}{% else %}<span class="nil">—</span>{% endif %}</td>
+
+                        <td class="col-bruta">{% if l.turbidez_bruta_ntu is not None %}{{ l.turbidez_bruta_ntu|floatformat:2 }}{% else %}<span class="nil">—</span>{% endif %}</td>
+                        <td class="col-bruta">{% if l.cor_bruta_uh is not None %}{{ l.cor_bruta_uh|floatformat:1 }}{% else %}<span class="nil">—</span>{% endif %}</td>
+                        <td class="col-bruta">{% if l.ph_bruto is not None %}{{ l.ph_bruto|floatformat:2 }}{% else %}<span class="nil">—</span>{% endif %}</td>
+
                         <td>
                             {% if l.status_conformidade %}
-                                <span class="badge-ok">Conforme</span>
+                                <span class="tag tag-ok">Conforme</span>
                             {% else %}
-                                <span class="badge-alerta">Não conforme</span>
+                                <span class="tag tag-bad">Não conforme</span>
                             {% endif %}
                         </td>
                     </tr>
                     {% endfor %}
 
-                    <!-- LINHA DE MÉDIAS -->
+                    <tr class="linha-amostras">
+                        <td colspan="3" class="rotulo">Amostras coletadas <span class="meta-nota">de {{ meta_amostras }} exigidas</span></td>
+                        {% for p in parametros %}
+                        <td class="{% if p.agua == 'tratada' %}col-tratada{% else %}col-bruta{% endif %}">
+                            <span class="{% if p.meta_cumprida %}conta-ok{% elif p.amostras %}conta-parcial{% else %}nil{% endif %}">{{ p.amostras }}</span>
+                            {% if p.amostras_sensor %}
+                                <span class="conta-sensor" title="{{ p.amostras_sensor }} vindas do sensor">
+                                    <i class="bi bi-cpu" aria-hidden="true"></i>{{ p.amostras_sensor }}
+                                </span>
+                            {% endif %}
+                        </td>
+                        {% endfor %}
+                        <td class="rotulo">{{ total }} leitura{{ total|pluralize }}</td>
+                    </tr>
+
                     <tr class="linha-media">
-                        <td colspan="2">MÉDIA DO PERÍODO ({{ total }} leituras)</td>
-                        <td>{{ medias.turbidez_ntu|default:"—" }}</td>
-                        <td>{{ medias.cor_uh|default:"—" }}</td>
-                        <td>{{ medias.ph|default:"—" }}</td>
-                        <td>{{ medias.cloro_residual_mgl|default:"—" }}</td>
-                        <td>{{ medias.coliformes_ufc|default:"—" }}</td>
-                        <td>{{ medias.alcalinidade_tratada|default:"—" }}</td>
-                        <td>{{ medias.turbidez_bruta_ntu|default:"—" }}</td>
-                        <td>{{ medias.cor_bruta_uh|default:"—" }}</td>
-                        <td>{{ medias.ph_bruto|default:"—" }}</td>
-                        <td>{{ medias.alcalinidade_bruta|default:"—" }}</td>
-                        <td>{{ medias.vazao_ls|default:"—" }}</td>
-                        <td>{{ medias.vazao_m3_dia|default:"—" }}</td>
-                        <td>{{ medias.sulfato_aluminio_kg|default:"—" }}</td>
-                        <td>{{ medias.policloreto_aluminio_l|default:"—" }}</td>
-                        <td>{{ medias.hipoclorito_sodio_kg|default:"—" }}</td>
-                        <td>{{ conformes }}/{{ total }} conformes</td>
+                        <td colspan="3" class="rotulo">Média do período ({{ total }} leitura{{ total|pluralize }})</td>
+                        <td class="col-tratada">{{ medias.turbidez_ntu|default_if_none:"—" }}</td>
+                        <td class="col-tratada">{{ medias.cor_uh|default_if_none:"—" }}</td>
+                        <td class="col-tratada">{{ medias.ph|default_if_none:"—" }}</td>
+                        <td class="col-tratada">{{ medias.cloro_residual_mgl|default_if_none:"—" }}</td>
+                        <td class="col-tratada">{{ medias.coliformes_ufc|default_if_none:"—" }}</td>
+                        <td class="col-bruta">{{ medias.turbidez_bruta_ntu|default_if_none:"—" }}</td>
+                        <td class="col-bruta">{{ medias.cor_bruta_uh|default_if_none:"—" }}</td>
+                        <td class="col-bruta">{{ medias.ph_bruto|default_if_none:"—" }}</td>
+                        <td class="rotulo">{{ conformes }} de {{ total }}</td>
                     </tr>
                 </tbody>
             </table>
-            {% else %}
-            <div class="sem-dados">
-                <i class="bi bi-inbox" style="font-size:2rem; display:block; margin-bottom:8px;"></i>
-                Nenhuma leitura encontrada para o período selecionado.
-            </div>
-            {% endif %}
         </div>
-    </div>
+        {% else %}
+        <div class="vazio">
+            <i class="bi bi-inbox" aria-hidden="true"></i>
+            <div class="vazio-h">Nenhuma leitura no período selecionado</div>
+            <div class="vazio-p">Ajuste os filtros acima ou registre uma nova leitura.</div>
+        </div>
+        {% endif %}
+    </section>
 
     {% if total > 500 %}
-    <div style="font-size:0.75rem; color:#94a3b8; margin-top:10px; text-align:right;">
-        Exibindo os 500 registros mais recentes. Use os filtros ou exporte o CSV para ver todos.
+    <div class="rodape-nota">
+        Exibindo as 500 leituras mais recentes. Use os filtros ou exporte o CSV para ver todas.
     </div>
     {% endif %}
 
 </main>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+(function () {
+    "use strict";
+
+    var CALMO = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    var ANIMAR = !CALMO && typeof gsap !== 'undefined';
+
+    function revelarTudo() {
+        document.querySelectorAll('.topo, .kpi, .filtros, .tabela-painel').forEach(function (el) {
+            el.style.opacity = '1';
+            el.style.transform = 'none';
+        });
+        document.querySelectorAll('.blob').forEach(function (b) { b.style.opacity = '.55'; });
+    }
+
+    if (!ANIMAR) {
+        revelarTudo();
+    } else {
+        gsap.to('.blob', { opacity: .6, duration: 1.5, stagger: .18, ease: 'power1.out' });
+        gsap.timeline({ defaults: { ease: 'power2.out' } })
+            .fromTo('#topo', { opacity: 0, y: 22 }, { opacity: 1, y: 0, duration: .58 })
+            .fromTo('.kpi', { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: .46, stagger: .07 }, '-=0.3')
+            .fromTo('.filtros', { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: .44 }, '-=0.26')
+            .fromTo('.tabela-painel', { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: .5 }, '-=0.28');
+    }
+})();
+</script>
 </body>
 </html>
-

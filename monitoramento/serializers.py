@@ -5,5 +5,6 @@ class LeituraSensorSerializer(serializers.ModelSerializer):
     class Meta:
         model = LeituraSensor
         fields = '__all__'
-        # Avisamos o Django que o ESP32 não precisa enviar esses dois campos no JSON
-        read_only_fields = ['status_conformidade', 'horario']
+        # Definidos pelo servidor, nunca pelo aparelho: o ESP32 não pode
+        # forjar conformidade nem se declarar operador.
+        read_only_fields = ['status_conformidade', 'horario', 'origem']

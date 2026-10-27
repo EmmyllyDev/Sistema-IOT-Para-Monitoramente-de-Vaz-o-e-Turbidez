@@ -1,0 +1,742 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIGUÁ — Configurações</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script>document.documentElement.className += ' js';</script>
+
+    <style>
+        :root {
+            --field:      #080b12;
+            --glass:      rgba(255, 255, 255, .055);
+            --glass-2:    rgba(255, 255, 255, .035);
+            --glass-edge: rgba(255, 255, 255, .085);
+            --glass-top:  rgba(255, 255, 255, .14);
+
+            --ink:    #f5f7fa;
+            --ink-2:  #9aa6b8;
+            --ink-3:  #7886a0;
+
+            --teal:   #40c8e0;
+            --orange: #ff9f0a;
+            --green:  #30d158;
+            --red:    #ff453a;
+            --blue:   #0a84ff;
+
+            --r-lg: 26px;
+            --r-md: 20px;
+            --r-sm: 14px;
+
+            --sidebar-w: 248px;
+            --ease-out: cubic-bezier(.22, 1, .36, 1);
+        }
+
+        * { font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif; }
+
+        body {
+            background: var(--field);
+            color: var(--ink);
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            letter-spacing: -.011em;
+        }
+
+        /* ═══ Aurora ═══ */
+        .aurora { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+        .blob { position: absolute; border-radius: 50%; filter: blur(100px); opacity: 0; will-change: transform, opacity; }
+        .blob-1 { width: 620px; height: 620px; top: -210px; left: -130px;
+                  background: radial-gradient(circle, rgba(64,200,224,.4), transparent 68%); }
+        .blob-2 { width: 560px; height: 560px; top: 22%; right: -170px;
+                  background: radial-gradient(circle, rgba(10,132,255,.32), transparent 68%); }
+        .blob-3 { width: 500px; height: 500px; bottom: -190px; left: 34%;
+                  background: radial-gradient(circle, rgba(94,92,230,.28), transparent 68%); }
+
+        /* ═══ Vidro ═══ */
+        .glass {
+            position: relative;
+            background: var(--glass);
+            border: 1px solid var(--glass-edge);
+            border-radius: var(--r-md);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+        }
+        .glass::before {
+            content: '';
+            position: absolute; top: 0; left: 14px; right: 14px; height: 1px;
+            background: linear-gradient(90deg, transparent, var(--glass-top), transparent);
+            pointer-events: none;
+        }
+
+        /* ═══ Sidebar ═══ */
+        .sidebar {
+            position: fixed; top: 0; left: 0;
+            width: var(--sidebar-w); height: 100vh; z-index: 50;
+            display: flex; flex-direction: column;
+            background: rgba(255, 255, 255, .03);
+            border-right: 1px solid var(--glass-edge);
+            backdrop-filter: blur(24px) saturate(180%);
+            -webkit-backdrop-filter: blur(24px) saturate(180%);
+        }
+        .brand {
+            padding: 22px 22px 20px;
+            display: flex; align-items: center; gap: 13px;
+            border-bottom: 1px solid var(--glass-edge);
+        }
+        .brand img { width: 46px; height: auto; flex-shrink: 0; }
+        .brand-unit { font-size: .7rem; line-height: 1.5; color: var(--ink-2); font-weight: 500; }
+
+        .nav-stack { padding: 20px 14px; flex: 1; }
+        .nav-group { font-size: .68rem; font-weight: 600; color: var(--ink-3); padding: 0 12px; margin: 20px 0 8px; }
+        .nav-group:first-child { margin-top: 0; }
+
+        .nav-link-s {
+            display: flex; align-items: center; gap: 12px;
+            padding: 11px 13px; min-height: 44px;
+            border-radius: var(--r-sm);
+            color: var(--ink-2); text-decoration: none;
+            font-size: .875rem; font-weight: 500;
+            margin-bottom: 3px; cursor: pointer;
+            transition: background .22s var(--ease-out), color .22s var(--ease-out);
+        }
+        .nav-link-s:hover { background: rgba(255,255,255,.06); color: var(--ink); }
+        .nav-link-s.active {
+            background: rgba(64,200,224,.13);
+            border: 1px solid rgba(64,200,224,.22);
+            color: #a8ecf7; font-weight: 600;
+        }
+        .nav-link-s i { font-size: 1.05rem; width: 19px; text-align: center; }
+
+        .nav-foot { padding: 16px 18px; border-top: 1px solid var(--glass-edge); }
+        .who { display: flex; align-items: center; gap: 11px; }
+        .who-badge {
+            width: 34px; height: 34px; border-radius: 50%;
+            background: linear-gradient(135deg, rgba(64,200,224,.3), rgba(10,132,255,.3));
+            border: 1px solid var(--glass-edge);
+            display: flex; align-items: center; justify-content: center;
+            font-size: .74rem; font-weight: 700; flex-shrink: 0;
+        }
+        .who-name { font-size: .82rem; font-weight: 600; }
+        .who-sub  { font-size: .68rem; color: var(--ink-3); }
+
+        /* ═══ Layout ═══ */
+        .shell {
+            position: relative; z-index: 1;
+            margin-left: var(--sidebar-w);
+            padding: 30px 34px 60px;
+            min-height: 100vh;
+        }
+
+        .topo { margin-bottom: 24px; opacity: 0; }
+        .topo-h {
+            font-size: clamp(1.6rem, 3vw, 2.2rem);
+            font-weight: 700; letter-spacing: -.035em; line-height: 1.12;
+            margin: 0 0 8px;
+        }
+        .topo-p { font-size: .9rem; color: var(--ink-2); margin: 0; max-width: 70ch; line-height: 1.6; }
+
+        /* ═══ Alertas ═══ */
+        .alerta {
+            display: flex; align-items: flex-start; gap: 11px;
+            padding: 14px 17px; border-radius: var(--r-sm);
+            font-size: .865rem; font-weight: 500; margin-bottom: 18px;
+            border: 1px solid transparent;
+        }
+        .alerta i { font-size: 1.05rem; flex-shrink: 0; margin-top: 1px; }
+        .alerta-erro { background: rgba(255,69,58,.12); border-color: rgba(255,69,58,.3); color: #ff9a93; }
+        .alerta-ok   { background: rgba(48,209,88,.12); border-color: rgba(48,209,88,.3); color: #7ee89b; }
+
+        /* ═══ Blocos ═══ */
+        .bloco { padding: 24px 26px 26px; border-radius: var(--r-lg); margin-bottom: 18px; opacity: 0; }
+
+        .bloco-head {
+            display: flex; align-items: flex-start; gap: 13px;
+            padding-bottom: 16px; margin-bottom: 20px;
+            border-bottom: 1px solid var(--glass-edge);
+        }
+        .bloco-ico {
+            width: 38px; height: 38px; border-radius: 11px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.08rem; flex-shrink: 0;
+            border: 1px solid var(--glass-edge);
+        }
+        .bloco-ico.chave  { background: rgba(255,159,10,.13); color: var(--orange); }
+        .bloco-ico.gente  { background: rgba(64,200,224,.13); color: var(--teal); }
+        .bloco-ico.fluxo  { background: rgba(48,209,88,.13);  color: var(--green); }
+
+        .bloco-h { font-size: 1.02rem; font-weight: 700; letter-spacing: -.02em; }
+        .bloco-sub { font-size: .78rem; color: var(--ink-3); margin-top: 3px; line-height: 1.55; max-width: 72ch; }
+
+        /* ═══ Token ═══ */
+        .token-caixa {
+            display: flex; align-items: center; gap: 12px;
+            flex-wrap: wrap;
+            padding: 15px 17px;
+            background: rgba(255,255,255,.04);
+            border: 1px solid var(--glass-edge);
+            border-radius: var(--r-sm);
+        }
+        .token-valor {
+            font-family: 'JetBrains Mono', ui-monospace, monospace;
+            font-size: .86rem; font-weight: 500;
+            color: var(--ink); word-break: break-all;
+            flex: 1 1 320px; min-width: 0;
+        }
+        .token-oculto { letter-spacing: .14em; color: var(--ink-3); }
+
+        .rotulo-campo {
+            display: block; font-size: .78rem; font-weight: 600;
+            color: var(--ink-2); margin-bottom: 8px;
+        }
+
+        /* ═══ Código do Arduino ═══ */
+        .codigo {
+            position: relative;
+            margin-top: 18px;
+            background: rgba(0,0,0,.3);
+            border: 1px solid var(--glass-edge);
+            border-radius: var(--r-sm);
+            overflow: hidden;
+        }
+        .codigo-topo {
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 10px; padding: 10px 14px;
+            border-bottom: 1px solid var(--glass-edge);
+            font-size: .74rem; font-weight: 600; color: var(--ink-3);
+        }
+        .codigo pre {
+            margin: 0; padding: 16px;
+            overflow-x: auto;
+            font-family: 'JetBrains Mono', ui-monospace, monospace;
+            font-size: .78rem; line-height: 1.7;
+            color: #c8d4e0;
+        }
+        .codigo .com { color: var(--ink-3); }
+        .codigo .str { color: #7ee89b; }
+        .codigo .fn  { color: #8fc6ff; }
+
+        /* ═══ Tabela de operadores ═══ */
+        .tabela-op { width: 100%; }
+        .tabela-op th {
+            font-size: .72rem; font-weight: 600; color: var(--ink-3);
+            padding: 10px 12px; text-align: left;
+            border-bottom: 1px solid var(--glass-edge);
+            white-space: nowrap;
+        }
+        .tabela-op td {
+            font-size: .85rem; color: var(--ink-2);
+            padding: 13px 12px;
+            border-bottom: 1px solid rgba(255,255,255,.045);
+            vertical-align: middle;
+        }
+        .tabela-op tr:last-child td { border-bottom: none; }
+        .op-nome { color: var(--ink); font-weight: 600; }
+        .op-user { font-size: .76rem; color: var(--ink-3); }
+
+        .tag {
+            font-size: .71rem; padding: 4px 10px;
+            border-radius: 999px; font-weight: 600;
+            border: 1px solid transparent; display: inline-block; white-space: nowrap;
+        }
+        .tag-ativo  { background: rgba(48,209,88,.14); border-color: rgba(48,209,88,.28); color: #7ee89b; }
+        .tag-inativo{ background: rgba(255,255,255,.05); border-color: var(--glass-edge); color: var(--ink-3); }
+        .tag-admin  { background: rgba(10,132,255,.14); border-color: rgba(10,132,255,.28); color: #8fc6ff; }
+        .tag-eu     { background: rgba(64,200,224,.12); border-color: rgba(64,200,224,.26); color: #a8ecf7; }
+
+        /* ═══ Campos ═══ */
+        input[type="text"], input[type="password"] {
+            width: 100%; height: 46px; padding: 0 14px;
+            background: rgba(255,255,255,.04);
+            border: 1px solid var(--glass-edge);
+            border-radius: var(--r-sm);
+            color: var(--ink);
+            font-size: .9rem; font-weight: 500;
+            transition: border-color .22s var(--ease-out), background .22s var(--ease-out);
+        }
+        input::placeholder { color: var(--ink-3); font-weight: 400; opacity: .72; }
+        input:hover { border-color: rgba(255,255,255,.16); }
+        input:focus {
+            outline: none; border-color: var(--teal);
+            background: rgba(64,200,224,.07);
+            box-shadow: 0 0 0 3px rgba(64,200,224,.16);
+        }
+
+        .marca {
+            display: inline-flex; align-items: center; gap: 9px;
+            font-size: .85rem; color: var(--ink-2); cursor: pointer;
+            padding: 10px 0;
+        }
+        .marca input { width: 18px; height: 18px; accent-color: var(--teal); cursor: pointer; }
+
+        /* ═══ Botões ═══ */
+        .btn-s {
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+            padding: 11px 19px; min-height: 44px;
+            border-radius: 999px;
+            font-size: .85rem; font-weight: 600;
+            text-decoration: none; cursor: pointer;
+            border: 1px solid var(--glass-edge);
+            background: var(--glass-2); color: var(--ink);
+            transition: background .22s var(--ease-out), border-color .22s var(--ease-out);
+            white-space: nowrap;
+        }
+        .btn-s:hover { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.18); color: var(--ink); }
+        .btn-s-fill { background: var(--blue); border-color: var(--blue); color: #fff; }
+        .btn-s-fill:hover { background: #2a96ff; border-color: #2a96ff; color: #fff; }
+        .btn-s-perigo { background: rgba(255,69,58,.14); border-color: rgba(255,69,58,.3); color: #ff9a93; }
+        .btn-s-perigo:hover { background: rgba(255,69,58,.22); border-color: rgba(255,69,58,.45); color: #ff9a93; }
+        .btn-mini { padding: 7px 13px; min-height: 36px; font-size: .765rem; }
+
+        /* ═══ Fluxo de dados ═══ */
+        .fluxo { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+        .fluxo-item {
+            padding: 16px 18px;
+            background: rgba(255,255,255,.035);
+            border: 1px solid var(--glass-edge);
+            border-left: 3px solid var(--marca-cor, var(--teal));
+            border-radius: var(--r-sm);
+        }
+        .fluxo-item.operador { --marca-cor: var(--green); }
+        .fluxo-topo { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 9px; }
+        .fluxo-nome { font-size: .85rem; font-weight: 600; color: var(--ink); }
+        .fluxo-cadencia { font-size: .72rem; color: var(--ink-3); font-weight: 600; }
+        .fluxo-params { font-size: .79rem; color: var(--ink-2); line-height: 1.55; }
+        .fluxo-pe { font-size: .72rem; color: var(--ink-3); margin-top: 10px; padding-top: 9px; border-top: 1px solid rgba(255,255,255,.055); }
+
+        a:focus-visible, button:focus-visible, input:focus-visible {
+            outline: 2px solid var(--teal); outline-offset: 3px;
+        }
+
+        /* ═══ Responsivo ═══ */
+        @media (max-width: 992px) {
+            .sidebar {
+                position: relative; width: 100%; height: auto;
+                flex-direction: row; align-items: center;
+                border-right: none; border-bottom: 1px solid var(--glass-edge);
+                overflow-x: auto;
+            }
+            .nav-stack { display: flex; gap: 5px; padding: 12px; flex: 0 1 auto; }
+            .nav-group, .nav-foot { display: none; }
+            .nav-link-s { margin-bottom: 0; white-space: nowrap; }
+            .brand { border-bottom: none; padding: 14px 18px; }
+            .shell { margin-left: 0; padding: 20px 18px 48px; }
+        }
+
+        @media (max-width: 700px) {
+            .fluxo { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 575px) {
+            .shell { padding: 16px 14px 40px; }
+            .bloco { padding: 20px 18px 22px; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            * { animation-duration: .001ms !important; animation-iteration-count: 1 !important; }
+        }
+
+        .js .topo, .js .bloco { opacity: 0; }
+    </style>
+</head>
+<body>
+
+<div class="aurora" aria-hidden="true">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+</div>
+
+<!-- ═══ SIDEBAR ═══ -->
+<aside class="sidebar">
+    <div class="brand">
+        <img src="{% static 'img/Logo.png' %}" alt="SIGUÁ">
+        <div class="brand-unit">ETA Júlio Campos<br>DAE Várzea Grande</div>
+    </div>
+
+    <nav class="nav-stack">
+        <div class="nav-group">Principal</div>
+        <a href="{% url 'dashboard' %}" class="nav-link-s">
+            <i class="bi bi-grid-1x2" aria-hidden="true"></i> Dashboard
+        </a>
+        <a href="{% url 'nova_leitura' %}" class="nav-link-s">
+            <i class="bi bi-plus-circle" aria-hidden="true"></i> Nova leitura
+        </a>
+        <a href="{% url 'relatorio' %}" class="nav-link-s">
+            <i class="bi bi-file-earmark-text" aria-hidden="true"></i> Relatório
+        </a>
+
+        <div class="nav-group">Sistema</div>
+        <a href="{% url 'configuracoes' %}" class="nav-link-s active" aria-current="page">
+            <i class="bi bi-sliders2" aria-hidden="true"></i> Configurações
+        </a>
+        <a href="{% url 'logout' %}" class="nav-link-s">
+            <i class="bi bi-box-arrow-right" aria-hidden="true"></i> Sair
+        </a>
+    </nav>
+
+    <div class="nav-foot">
+        <div class="who">
+            <span class="who-badge">{{ request.user.username|slice:":2"|upper }}</span>
+            <div>
+                <div class="who-name">{{ request.user.get_full_name|default:request.user.username }}</div>
+                <div class="who-sub">{% if request.user.is_superuser %}Administrador{% else %}Operador{% endif %}</div>
+            </div>
+        </div>
+    </div>
+</aside>
+
+<!-- ═══ CONTEÚDO ═══ -->
+<main class="shell">
+
+    <div class="topo" id="topo">
+        <h1 class="topo-h">Configurações</h1>
+        <p class="topo-p">
+            Acesso do sensor à API e contas dos operadores da estação.
+        </p>
+    </div>
+
+    {% if messages %}
+        {% for m in messages %}
+        <div class="alerta {% if m.tags == 'error' %}alerta-erro{% else %}alerta-ok{% endif %}" role="alert">
+            <i class="bi {% if m.tags == 'error' %}bi-exclamation-triangle-fill{% else %}bi-check-circle-fill{% endif %}" aria-hidden="true"></i>
+            <span>{{ m }}</span>
+        </div>
+        {% endfor %}
+    {% endif %}
+
+    {% if not pode_editar %}
+    <div class="alerta alerta-erro" role="status">
+        <i class="bi bi-lock-fill" aria-hidden="true"></i>
+        <span>Você pode ver estas configurações, mas só um administrador pode alterá-las.</span>
+    </div>
+    {% endif %}
+
+    <!-- ─── Origem dos dados ─── -->
+    <section class="bloco glass">
+        <div class="bloco-head">
+            <span class="bloco-ico fluxo"><i class="bi bi-diagram-3" aria-hidden="true"></i></span>
+            <div>
+                <div class="bloco-h">Origem das leituras</div>
+                <div class="bloco-sub">
+                    Só as coletas do operador contam para a meta de amostragem da portaria.
+                    As do sensor alimentam os gráficos, mas chegam com frequência alta demais
+                    para entrar nessa conta.
+                </div>
+            </div>
+        </div>
+
+        <div class="fluxo">
+            <div class="fluxo-item">
+                <div class="fluxo-topo">
+                    <span class="fluxo-nome"><i class="bi bi-cpu me-1" aria-hidden="true"></i> Sensor</span>
+                    <span class="fluxo-cadencia">a cada 30 min</span>
+                </div>
+                <div class="fluxo-params">Turbidez tratada e altura na calha Parshall, convertida em vazão.</div>
+                <div class="fluxo-pe">
+                    {{ total_sensor }} leitura{{ total_sensor|pluralize }} recebida{{ total_sensor|pluralize }}
+                    {% if ultima_sensor %}
+                        · última em {{ ultima_sensor.horario|date:"d/m/Y H:i" }}
+                    {% else %}
+                        · nenhuma até agora
+                    {% endif %}
+                </div>
+            </div>
+            <div class="fluxo-item operador">
+                <div class="fluxo-topo">
+                    <span class="fluxo-nome"><i class="bi bi-person-badge me-1" aria-hidden="true"></i> Operador</span>
+                    <span class="fluxo-cadencia">a cada 2 horas</span>
+                </div>
+                <div class="fluxo-params">Cor, pH, cloro residual e coliformes, mais os dados da água bruta.</div>
+                <div class="fluxo-pe">{{ total_operador }} leitura{{ total_operador|pluralize }} registrada{{ total_operador|pluralize }} · conta para a meta</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ─── Token do sensor ─── -->
+    <section class="bloco glass">
+        <div class="bloco-head">
+            <span class="bloco-ico chave"><i class="bi bi-key-fill" aria-hidden="true"></i></span>
+            <div>
+                <div class="bloco-h">Token do sensor</div>
+                <div class="bloco-sub">
+                    O ESP32 envia este token em todo POST. Sem ele a API recusa a leitura,
+                    o que impede qualquer aparelho não autorizado de gravar dados de qualidade
+                    de água no sistema.
+                </div>
+            </div>
+        </div>
+
+        <span class="rotulo-campo">Token atual</span>
+        <div class="token-caixa">
+            <code class="token-valor token-oculto" id="tokenValor"
+                  data-token="{{ config.token_sensor }}">••••••••••••••••••••••••••••••••</code>
+            <button type="button" class="btn-s btn-mini" id="btnMostrar">
+                <i class="bi bi-eye" aria-hidden="true"></i> Mostrar
+            </button>
+            <button type="button" class="btn-s btn-mini" id="btnCopiar">
+                <i class="bi bi-clipboard" aria-hidden="true"></i> Copiar
+            </button>
+        </div>
+
+        {% if config.token_gerado_em %}
+        <div style="font-size:.75rem; color:var(--ink-3); margin-top:10px;">
+            Gerado em {{ config.token_gerado_em|date:"d/m/Y \à\s H:i" }}
+        </div>
+        {% endif %}
+
+        <!-- Trecho para o firmware -->
+        <div class="codigo">
+            <div class="codigo-topo">
+                <span><i class="bi bi-filetype-raw me-1" aria-hidden="true"></i> Arduino IDE — envio da leitura</span>
+                <button type="button" class="btn-s btn-mini" id="btnCopiarCodigo">
+                    <i class="bi bi-clipboard" aria-hidden="true"></i> Copiar código
+                </button>
+            </div>
+<pre id="codigoArduino"><span class="com">// Envie turbidez e a altura lida na calha. A vazão o servidor converte.</span>
+HTTPClient http;
+http.<span class="fn">begin</span>(<span class="str">"{{ url_api }}"</span>);
+http.<span class="fn">addHeader</span>(<span class="str">"Content-Type"</span>, <span class="str">"application/json"</span>);
+http.<span class="fn">addHeader</span>(<span class="str">"Authorization"</span>, <span class="str">"Bearer SEU_TOKEN_AQUI"</span>);
+
+String corpo = <span class="str">"{\"turbidez_ntu\": "</span> + String(turbidez, 2)
+             + <span class="str">", \"nivel_cm\": "</span> + String(nivelCm, 1) + <span class="str">"}"</span>;
+
+int codigo = http.<span class="fn">POST</span>(corpo);  <span class="com">// 201 = registrada, 401 = token inválido</span>
+http.<span class="fn">end</span>();</pre>
+        </div>
+
+        {% if pode_editar %}
+        <form method="post" style="margin-top:18px;" id="formToken">
+            {% csrf_token %}
+            <input type="hidden" name="acao" value="regerar_token">
+            <button type="submit" class="btn-s btn-s-perigo">
+                <i class="bi bi-arrow-repeat" aria-hidden="true"></i> Regerar token
+            </button>
+            <span style="font-size:.76rem; color:var(--ink-3); margin-left:12px;">
+                O token atual para de funcionar na hora. O ESP32 precisa ser regravado.
+            </span>
+        </form>
+        {% endif %}
+    </section>
+
+    <!-- ─── Operadores ─── -->
+    <section class="bloco glass">
+        <div class="bloco-head">
+            <span class="bloco-ico gente"><i class="bi bi-people-fill" aria-hidden="true"></i></span>
+            <div>
+                <div class="bloco-h">Operadores</div>
+                <div class="bloco-sub">
+                    Cada operador com a própria conta deixa toda leitura rastreável a quem
+                    coletou, que é o que uma auditoria do órgão pergunta.
+                </div>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="tabela-op">
+                <thead>
+                    <tr>
+                        <th>Operador</th>
+                        <th>Situação</th>
+                        <th>Leituras</th>
+                        {% if pode_editar %}<th style="text-align:right;">Ações</th>{% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for o in operadores %}
+                    <tr>
+                        <td>
+                            <div class="op-nome">
+                                {{ o.nome }}
+                                {% if o.eu %}<span class="tag tag-eu" style="margin-left:6px;">você</span>{% endif %}
+                                {% if o.obj.is_superuser %}<span class="tag tag-admin" style="margin-left:6px;">admin</span>{% endif %}
+                            </div>
+                            <div class="op-user">{{ o.obj.username }}</div>
+                        </td>
+                        <td>
+                            {% if o.obj.is_active %}
+                                <span class="tag tag-ativo">ativo</span>
+                            {% else %}
+                                <span class="tag tag-inativo">bloqueado</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ o.leituras }}</td>
+                        {% if pode_editar %}
+                        <td style="text-align:right;">
+                            <div class="d-inline-flex gap-2 flex-wrap justify-content-end">
+                                {% if not o.eu %}
+                                <form method="post" style="display:inline;">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="acao" value="{% if o.obj.is_active %}desativar{% else %}ativar{% endif %}">
+                                    <input type="hidden" name="user_id" value="{{ o.obj.pk }}">
+                                    <button type="submit" class="btn-s btn-mini {% if o.obj.is_active %}btn-s-perigo{% endif %}">
+                                        {% if o.obj.is_active %}Bloquear{% else %}Liberar{% endif %}
+                                    </button>
+                                </form>
+                                {% endif %}
+                                <button type="button" class="btn-s btn-mini btn-senha" data-user="{{ o.obj.pk }}" data-nome="{{ o.nome }}">
+                                    Nova senha
+                                </button>
+                            </div>
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if pode_editar %}
+        <!-- Troca de senha, revelada ao clicar -->
+        <form method="post" id="formSenha" style="display:none; margin-top:18px; padding-top:18px; border-top:1px solid var(--glass-edge);">
+            {% csrf_token %}
+            <input type="hidden" name="acao" value="nova_senha">
+            <input type="hidden" name="user_id" id="senhaUserId">
+            <span class="rotulo-campo">Nova senha para <strong id="senhaNome"></strong></span>
+            <div class="d-flex gap-2 flex-wrap" style="max-width:520px;">
+                <input type="password" name="senha" minlength="8" required
+                       placeholder="Ao menos 8 caracteres" style="flex:1 1 240px;">
+                <button type="submit" class="btn-s btn-s-fill">Salvar</button>
+                <button type="button" class="btn-s" id="btnCancelarSenha">Cancelar</button>
+            </div>
+        </form>
+
+        <!-- Novo operador -->
+        <form method="post" style="margin-top:22px; padding-top:20px; border-top:1px solid var(--glass-edge);">
+            {% csrf_token %}
+            <input type="hidden" name="acao" value="criar_operador">
+            <span class="rotulo-campo" style="font-size:.85rem; color:var(--ink);">Adicionar operador</span>
+            <div class="row g-3" style="margin-top:2px;">
+                <div class="col-md-4">
+                    <label class="rotulo-campo" for="novo_nome">Nome</label>
+                    <input type="text" id="novo_nome" name="nome" placeholder="Maria da Silva">
+                </div>
+                <div class="col-md-4">
+                    <label class="rotulo-campo" for="novo_user">Usuário</label>
+                    <input type="text" id="novo_user" name="username" required placeholder="maria">
+                </div>
+                <div class="col-md-4">
+                    <label class="rotulo-campo" for="nova_senha">Senha</label>
+                    <input type="password" id="nova_senha" name="senha" required minlength="8" placeholder="Ao menos 8 caracteres">
+                </div>
+            </div>
+            <label class="marca">
+                <input type="checkbox" name="admin" value="sim">
+                Também pode alterar configurações
+            </label>
+            <div>
+                <button type="submit" class="btn-s btn-s-fill">
+                    <i class="bi bi-person-plus" aria-hidden="true"></i> Criar operador
+                </button>
+            </div>
+        </form>
+        {% endif %}
+    </section>
+
+</main>
+
+<script>
+(function () {
+    "use strict";
+
+    var CALMO = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    var ANIMAR = !CALMO && typeof gsap !== 'undefined';
+
+    if (!ANIMAR) {
+        document.querySelectorAll('.topo, .bloco').forEach(function (el) {
+            el.style.opacity = '1';
+            el.style.transform = 'none';
+        });
+        document.querySelectorAll('.blob').forEach(function (b) { b.style.opacity = '.55'; });
+    } else {
+        gsap.to('.blob', { opacity: .6, duration: 1.5, stagger: .18, ease: 'power1.out' });
+        gsap.timeline({ defaults: { ease: 'power2.out' } })
+            .fromTo('#topo', { opacity: 0, y: 22 }, { opacity: 1, y: 0, duration: .58 })
+            .fromTo('.bloco', { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: .48, stagger: .09 }, '-=0.3');
+    }
+
+    /* Token: mostrar e copiar */
+    var alvo = document.getElementById('tokenValor');
+    var btnMostrar = document.getElementById('btnMostrar');
+    var visivel = false;
+
+    if (btnMostrar && alvo) {
+        btnMostrar.addEventListener('click', function () {
+            visivel = !visivel;
+            alvo.textContent = visivel ? alvo.dataset.token : '••••••••••••••••••••••••••••••••';
+            alvo.classList.toggle('token-oculto', !visivel);
+            btnMostrar.innerHTML = visivel
+                ? '<i class="bi bi-eye-slash"></i> Ocultar'
+                : '<i class="bi bi-eye"></i> Mostrar';
+        });
+    }
+
+    function copiar(texto, botao, rotulo) {
+        function aviso() {
+            var antes = botao.innerHTML;
+            botao.innerHTML = '<i class="bi bi-check-lg"></i> Copiado';
+            setTimeout(function () { botao.innerHTML = antes; }, 1800);
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(texto).then(aviso, function () { window.prompt(rotulo, texto); });
+        } else {
+            window.prompt(rotulo, texto);
+        }
+    }
+
+    var btnCopiar = document.getElementById('btnCopiar');
+    if (btnCopiar && alvo) {
+        btnCopiar.addEventListener('click', function () {
+            copiar(alvo.dataset.token, btnCopiar, 'Copie o token:');
+        });
+    }
+
+    var btnCodigo = document.getElementById('btnCopiarCodigo');
+    var bloco = document.getElementById('codigoArduino');
+    if (btnCodigo && bloco && alvo) {
+        btnCodigo.addEventListener('click', function () {
+            // Entrega o trecho já com o token no lugar do marcador.
+            var texto = bloco.innerText.replace('SEU_TOKEN_AQUI', alvo.dataset.token);
+            copiar(texto, btnCodigo, 'Copie o código:');
+        });
+    }
+
+    /* Regerar token: confirma, porque derruba o sensor em campo */
+    var formToken = document.getElementById('formToken');
+    if (formToken) {
+        formToken.addEventListener('submit', function (ev) {
+            var ok = window.confirm(
+                'Regerar o token?\n\nO ESP32 em campo para de enviar leituras até ser regravado com o novo token.'
+            );
+            if (!ok) { ev.preventDefault(); }
+        });
+    }
+
+    /* Troca de senha */
+    var formSenha = document.getElementById('formSenha');
+    if (formSenha) {
+        document.querySelectorAll('.btn-senha').forEach(function (b) {
+            b.addEventListener('click', function () {
+                document.getElementById('senhaUserId').value = b.dataset.user;
+                document.getElementById('senhaNome').textContent = b.dataset.nome;
+                formSenha.style.display = 'block';
+                formSenha.querySelector('input[name="senha"]').focus();
+            });
+        });
+        document.getElementById('btnCancelarSenha').addEventListener('click', function () {
+            formSenha.style.display = 'none';
+        });
+    }
+})();
+</script>
+</body>
+</html>

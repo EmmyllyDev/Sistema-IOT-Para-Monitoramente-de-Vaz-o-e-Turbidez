@@ -23,13 +23,33 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-ezxzr9d!w2pu=yox61fd9t*r@t%mi8dk3zqlg7t83gcds0%g3r"
+def _lista(nome, padrao=''):
+    """Lê uma variável separada por vírgulas do ambiente."""
+    return [x.strip() for x in os.getenv(nome, padrao).split(',') if x.strip()]
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
 
-ALLOWED_HOSTS = []
+# Assina sessões e tokens. Em produção vem do ambiente e nunca do código.
+SECRET_KEY = os.getenv('SECRET_KEY', '')
+
+DEBUG = os.getenv('DEBUG', 'False').strip().lower() in ('1', 'true', 'sim')
+
+if not SECRET_KEY:
+    if DEBUG:
+        SECRET_KEY = 'django-inseguro-apenas-para-desenvolvimento-local'
+    else:
+        raise RuntimeError(
+            'Defina SECRET_KEY no ambiente antes de rodar com DEBUG desligado.'
+        )
+
+# Hosts que podem servir o site: o IP da máquina na rede da ETA, o domínio
+# da nuvem, ou ambos. Ex.: ALLOWED_HOSTS=192.168.1.127,sigua.exemplo.com
+ALLOWED_HOSTS = _lista('ALLOWED_HOSTS')
+if DEBUG and not ALLOWED_HOSTS:
+    ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+
+# Domínios públicos precisam constar aqui para os formulários não caírem
+# por CSRF. Ex.: CSRF_TRUSTED_ORIGINS=https://sigua.exemplo.com
+CSRF_TRUSTED_ORIGINS = _lista('CSRF_TRUSTED_ORIGINS')
 
 
 # Application definition
@@ -47,6 +67,8 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    # Serve os arquivos estáticos sem depender de Nginx.
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -78,16 +100,26 @@ WSGI_APPLICATION = "setup.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('DB_NAME', 'sigua_db'),
-        'USER': os.getenv('DB_USER', 'postgres'),
-        'PASSWORD': os.getenv('DB_PASS'), 
-        'HOST': os.getenv('DB_HOST', 'localhost'),
-        'PORT': os.getenv('DB_PORT', '5433'),
+# Serviços de nuvem entregam a conexão numa única DATABASE_URL.
+# Sem ela, usa as variáveis separadas do .env local.
+_url_banco = os.getenv('DATABASE_URL', '').strip()
+
+if _url_banco:
+    import dj_database_url
+    DATABASES = {
+        'default': dj_database_url.parse(_url_banco, conn_max_age=600, ssl_require=not DEBUG)
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.getenv('DB_NAME', 'sigua_db'),
+            'USER': os.getenv('DB_USER', 'postgres'),
+            'PASSWORD': os.getenv('DB_PASS'),
+            'HOST': os.getenv('DB_HOST', 'localhost'),
+            'PORT': os.getenv('DB_PORT', '5432'),
+        }
+    }
 
 
 # Password validation
@@ -127,6 +159,34 @@ USE_TZ = False
 STATIC_URL = "static/"
 
 STATICFILES_DIRS = [BASE_DIR / 'static']
+
+# Destino do collectstatic, de onde o WhiteNoise serve em produção.
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
+}
+
+
+# ── Segurança quando o site sai da máquina local ──────────
+# HTTPS é o que decide os cookies seguros, não o DEBUG. Numa rede local
+# sem certificado, cookie "secure" nunca chega ao servidor e o login passa
+# a dar 403 por CSRF. Ligue USAR_HTTPS ao publicar num domínio com https.
+USAR_HTTPS = os.getenv('USAR_HTTPS', 'False').strip().lower() in ('1', 'true', 'sim')
+
+if not DEBUG:
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS = 'DENY'
+
+if USAR_HTTPS:
+    # A nuvem termina o HTTPS num proxy; sem isso o Django se acha em HTTP.
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 
 LOGIN_URL = '/monitoramento/login/'
 LOGIN_REDIRECT_URL = '/monitoramento/dashboard/'

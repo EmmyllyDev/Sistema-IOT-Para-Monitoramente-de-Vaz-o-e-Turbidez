@@ -1,5 +1,7 @@
 from django.urls import path
-from .views import ReceberDadosESP32, dashboard, nova_leitura, login_view, logout_view, resultado_leitura, registrar_feedback, relatorio, exportar_csv
+from .views import (ReceberDadosESP32, dashboard, nova_leitura, login_view,
+                    logout_view, resultado_leitura, registrar_feedback,
+                    relatorio, exportar_csv, configuracoes)
 
 urlpatterns = [
     path('api/sensor/', ReceberDadosESP32.as_view(), name='receber_dados'),
@@ -9,6 +11,7 @@ urlpatterns = [
     path('resultado/<int:pk>/feedback/', registrar_feedback, name='registrar_feedback'),
     path('relatorio/', relatorio, name='relatorio'),
     path('relatorio/exportar-csv/', exportar_csv, name='exportar_csv'),
+    path('configuracoes/', configuracoes, name='configuracoes'),
     path('login/', login_view, name='login'),
     path('logout/', logout_view, name='logout'),
 ]

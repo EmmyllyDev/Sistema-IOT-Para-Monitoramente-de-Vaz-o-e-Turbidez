@@ -1,392 +1,766 @@
-﻿{% load static %}
+{% load static %}
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SIGUÁ — Nova Leitura</title>
+    <title>SIGUÁ — Nova leitura</title>
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script>document.documentElement.className += ' js';</script>
 
     <style>
-        *, body { font-family: 'Inter', sans-serif; }
-        body { background-color: #f1f5f9; overflow-x: hidden; }
+        :root {
+            --field:      #080b12;
+            --glass:      rgba(255, 255, 255, .055);
+            --glass-2:    rgba(255, 255, 255, .035);
+            --glass-edge: rgba(255, 255, 255, .085);
+            --glass-top:  rgba(255, 255, 255, .14);
 
+            --ink:    #f5f7fa;
+            --ink-2:  #9aa6b8;
+            --ink-3:  #7886a0;
+
+            --teal:   #40c8e0;
+            --orange: #ff9f0a;
+            --green:  #30d158;
+            --red:    #ff453a;
+            --blue:   #0a84ff;
+
+            --r-lg: 26px;
+            --r-md: 20px;
+            --r-sm: 14px;
+
+            --sidebar-w: 248px;
+            --ease-out: cubic-bezier(.22, 1, .36, 1);
+        }
+
+        * { font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif; }
+
+        body {
+            background: var(--field);
+            color: var(--ink);
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            letter-spacing: -.011em;
+        }
+
+        /* ═══ Aurora ═══ */
+        .aurora { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+
+        .blob { position: absolute; border-radius: 50%; filter: blur(100px); opacity: 0; will-change: transform, opacity; }
+
+        .blob-1 {
+            width: 620px; height: 620px; top: -210px; left: -130px;
+            background: radial-gradient(circle, rgba(64,200,224,.42), transparent 68%);
+        }
+        .blob-2 {
+            width: 560px; height: 560px; top: 22%; right: -170px;
+            background: radial-gradient(circle, rgba(10,132,255,.32), transparent 68%);
+        }
+        .blob-3 {
+            width: 500px; height: 500px; bottom: -190px; left: 34%;
+            background: radial-gradient(circle, rgba(94,92,230,.28), transparent 68%);
+        }
+
+        /* ═══ Vidro ═══ */
+        .glass {
+            position: relative;
+            background: var(--glass);
+            border: 1px solid var(--glass-edge);
+            border-radius: var(--r-md);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+        }
+
+        .glass::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 14px; right: 14px; height: 1px;
+            background: linear-gradient(90deg, transparent, var(--glass-top), transparent);
+            pointer-events: none;
+        }
+
+        /* ═══ Sidebar ═══ */
         .sidebar {
             position: fixed; top: 0; left: 0;
-            width: 220px; height: 100vh;
-            background: #0f2744;
+            width: var(--sidebar-w); height: 100vh; z-index: 50;
             display: flex; flex-direction: column;
-            z-index: 100;
-        }
-        .sidebar-brand { padding: 20px 20px 16px; border-bottom: 1px solid rgba(255,255,255,0.08); }
-        .sidebar-brand .brand-name { color: #fff; font-size: 1.1rem; font-weight: 700; letter-spacing: 0.05em; }
-        .sidebar-brand .brand-sub  { color: #94a3b8; font-size: 0.7rem; line-height: 1.3; margin-top: 2px; }
-        .sidebar-nav   { padding: 16px 12px; flex: 1; }
-        .sidebar-label { color: #475569; font-size: 0.65rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; padding: 0 8px; margin-bottom: 6px; margin-top: 12px; }
-        .nav-item-link { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 8px; color: #94a3b8; text-decoration: none; font-size: 0.85rem; font-weight: 500; transition: background 0.15s, color 0.15s; margin-bottom: 2px; }
-        .nav-item-link:hover  { background: rgba(255,255,255,0.06); color: #e2e8f0; }
-        .nav-item-link.active { background: rgba(37,99,235,0.25); color: #93c5fd; }
-        .nav-item-link i { font-size: 1rem; width: 18px; text-align: center; }
-        .sidebar-footer { padding: 16px; border-top: 1px solid rgba(255,255,255,0.08); }
-        .sidebar-footer small { color: #475569; font-size: 0.7rem; }
-
-        .main-content { margin-left: 220px; padding: 28px 28px 40px; min-height: 100vh; }
-
-        .form-card {
-            background: #fff;
-            border-radius: 12px;
-            padding: 28px 32px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-            max-width: 860px;
+            background: rgba(255, 255, 255, .03);
+            border-right: 1px solid var(--glass-edge);
+            backdrop-filter: blur(24px) saturate(180%);
+            -webkit-backdrop-filter: blur(24px) saturate(180%);
         }
 
-        .section-title {
-            font-size: 0.7rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            color: #94a3b8;
-            margin-bottom: 14px;
-            padding-bottom: 8px;
-            border-bottom: 1px solid #f1f5f9;
+        .brand {
+            padding: 22px 22px 20px;
+            display: flex; align-items: center; gap: 13px;
+            border-bottom: 1px solid var(--glass-edge);
+        }
+        .brand img { width: 46px; height: auto; flex-shrink: 0; }
+        .brand-unit { font-size: .7rem; line-height: 1.5; color: var(--ink-2); font-weight: 500; }
+
+        .nav-stack { padding: 20px 14px; flex: 1; }
+
+        .nav-group {
+            font-size: .68rem; font-weight: 600; color: var(--ink-3);
+            padding: 0 12px; margin: 20px 0 8px;
+        }
+        .nav-group:first-child { margin-top: 0; }
+
+        .nav-link-s {
+            display: flex; align-items: center; gap: 12px;
+            padding: 11px 13px; min-height: 44px;
+            border-radius: var(--r-sm);
+            color: var(--ink-2); text-decoration: none;
+            font-size: .875rem; font-weight: 500;
+            margin-bottom: 3px; cursor: pointer;
+            transition: background .22s var(--ease-out), color .22s var(--ease-out);
+        }
+        .nav-link-s:hover { background: rgba(255,255,255,.06); color: var(--ink); }
+        .nav-link-s.active {
+            background: rgba(64,200,224,.13);
+            border: 1px solid rgba(64,200,224,.22);
+            color: #a8ecf7; font-weight: 600;
+        }
+        .nav-link-s i { font-size: 1.05rem; width: 19px; text-align: center; }
+
+        .nav-foot { padding: 16px 18px; border-top: 1px solid var(--glass-edge); }
+        .who { display: flex; align-items: center; gap: 11px; }
+        .who-badge {
+            width: 34px; height: 34px; border-radius: 50%;
+            background: linear-gradient(135deg, rgba(64,200,224,.3), rgba(10,132,255,.3));
+            border: 1px solid var(--glass-edge);
+            display: flex; align-items: center; justify-content: center;
+            font-size: .74rem; font-weight: 700; flex-shrink: 0;
+        }
+        .who-name { font-size: .82rem; font-weight: 600; }
+        .who-sub  { font-size: .68rem; color: var(--ink-3); }
+
+        /* ═══ Layout ═══ */
+        .shell {
+            position: relative; z-index: 1;
+            margin-left: var(--sidebar-w);
+            padding: 30px 34px 140px;
+            min-height: 100vh;
         }
 
-        .section-title.bruta { color: #b45309; border-color: #fef3c7; }
-        .section-title.dosagem { color: #065f46; border-color: #d1fae5; }
+        .page-head { margin-bottom: 26px; opacity: 0; }
 
-        .section-header {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 14px;
-            padding-bottom: 8px;
+        .crumb {
+            display: inline-flex; align-items: center; gap: 7px;
+            font-size: .78rem; font-weight: 600;
+            color: var(--ink-3); text-decoration: none;
+            margin-bottom: 12px;
+            transition: color .22s var(--ease-out);
         }
-        .section-header .dot {
-            width: 8px; height: 8px; border-radius: 50%;
+        .crumb:hover { color: var(--teal); }
+
+        .page-h {
+            font-size: clamp(1.6rem, 3vw, 2.3rem);
+            font-weight: 700; letter-spacing: -.035em; line-height: 1.12;
+            margin: 0 0 10px;
+        }
+
+        .page-p {
+            font-size: .91rem; line-height: 1.6;
+            color: var(--ink-2); max-width: 62ch; margin: 0;
+        }
+
+        /* ═══ Alertas ═══ */
+        .alerta {
+            display: flex; align-items: flex-start; gap: 11px;
+            padding: 14px 17px;
+            border-radius: var(--r-sm);
+            font-size: .865rem; font-weight: 500;
+            margin-bottom: 20px;
+            border: 1px solid transparent;
+        }
+        .alerta i { font-size: 1.05rem; flex-shrink: 0; margin-top: 1px; }
+        .alerta-erro { background: rgba(255,69,58,.12); border-color: rgba(255,69,58,.3); color: #ff9a93; }
+        .alerta-ok   { background: rgba(48,209,88,.12); border-color: rgba(48,209,88,.3); color: #7ee89b; }
+
+        /* ═══ Seções do formulário ═══ */
+        .bloco { padding: 24px 26px 26px; border-radius: var(--r-lg); margin-bottom: 18px; opacity: 0; }
+
+        .bloco-head {
+            display: flex; align-items: center; gap: 13px;
+            padding-bottom: 16px; margin-bottom: 20px;
+            border-bottom: 1px solid var(--glass-edge);
+        }
+
+        .bloco-ico {
+            width: 38px; height: 38px; border-radius: 11px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.08rem; flex-shrink: 0;
+            border: 1px solid var(--glass-edge);
+        }
+        .bloco-ico.bruta   { background: rgba(255,159,10,.13); color: var(--orange); }
+        .bloco-ico.tratada { background: rgba(64,200,224,.13); color: var(--teal); }
+        .bloco-ico.vazao   { background: rgba(48,209,88,.13);  color: var(--green); }
+        .bloco-ico.dose    { background: rgba(10,132,255,.13); color: var(--blue); }
+        .bloco-ico.ident   { background: rgba(255,255,255,.06); color: var(--ink-2); }
+
+        .bloco-h { font-size: 1.02rem; font-weight: 700; letter-spacing: -.02em; }
+        .bloco-sub { font-size: .78rem; color: var(--ink-3); margin-top: 2px; }
+
+        /* ═══ Campos ═══ */
+        .campo { margin-bottom: 4px; }
+
+        .campo label {
+            display: block;
+            font-size: .8rem; font-weight: 600;
+            color: var(--ink-2); margin-bottom: 7px;
+        }
+
+        .campo-caixa { position: relative; }
+
+        .campo input[type="text"],
+        .campo input[type="number"] {
+            width: 100%;
+            height: 48px;
+            padding: 0 58px 0 15px;
+            background: rgba(255,255,255,.04);
+            border: 1px solid var(--glass-edge);
+            border-radius: var(--r-sm);
+            color: var(--ink);
+            font-size: .95rem; font-weight: 600;
+            font-variant-numeric: tabular-nums;
+            transition: border-color .22s var(--ease-out), background .22s var(--ease-out);
+        }
+
+        .campo input::placeholder { color: var(--ink-3); font-weight: 400; opacity: .7; }
+
+        .campo input:hover { border-color: rgba(255,255,255,.16); }
+
+        .campo input:focus {
+            outline: none;
+            border-color: var(--teal);
+            background: rgba(64,200,224,.07);
+            box-shadow: 0 0 0 3px rgba(64,200,224,.16);
+        }
+
+        .campo-unidade {
+            position: absolute;
+            right: 14px; top: 50%;
+            transform: translateY(-50%);
+            font-size: .76rem; font-weight: 600;
+            color: var(--ink-3);
+            pointer-events: none;
+        }
+
+        .campo-ajuda { font-size: .72rem; color: var(--ink-3); margin-top: 6px; }
+
+        /* ═══ Seletor de reservatório ═══ */
+        .reserv {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+            margin-bottom: 22px;
+        }
+
+        .reserv input { position: absolute; opacity: 0; pointer-events: none; }
+
+        .reserv label {
+            display: flex; align-items: center; gap: 13px;
+            padding: 15px 17px; min-height: 44px;
+            background: rgba(255,255,255,.04);
+            border: 1px solid var(--glass-edge);
+            border-radius: var(--r-sm);
+            cursor: pointer;
+            transition: border-color .22s var(--ease-out), background .22s var(--ease-out);
+            margin: 0;
+        }
+
+        .reserv label:hover { border-color: rgba(255,255,255,.18); }
+
+        .reserv-ico {
+            width: 36px; height: 36px; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.05rem; flex-shrink: 0;
+            background: rgba(255,255,255,.055);
+            color: var(--ink-2);
+            transition: background .22s var(--ease-out), color .22s var(--ease-out);
+        }
+
+        .reserv-nome { font-size: .9rem; font-weight: 600; color: var(--ink); }
+        .reserv-sub  { font-size: .72rem; color: var(--ink-3); margin-top: 1px; }
+
+        .reserv-check {
+            margin-left: auto;
+            width: 20px; height: 20px; border-radius: 50%;
+            border: 1.5px solid var(--glass-edge);
+            display: flex; align-items: center; justify-content: center;
+            font-size: .68rem; color: transparent;
             flex-shrink: 0;
-        }
-        .dot-blue   { background: #2563eb; }
-        .dot-yellow { background: #d97706; }
-        .dot-green  { background: #059669; }
-
-        .form-label {
-            font-size: 0.8rem;
-            font-weight: 600;
-            color: #475569;
-            margin-bottom: 4px;
+            transition: all .22s var(--ease-out);
         }
 
-        .form-control, .form-select {
-            font-size: 0.875rem;
-            border-color: #e2e8f0;
-            border-radius: 8px;
-            padding: 9px 12px;
-            color: #0f172a;
+        .reserv input:checked + label {
+            background: rgba(64,200,224,.1);
+            border-color: rgba(64,200,224,.42);
         }
-        .form-control:focus, .form-select:focus {
-            border-color: #2563eb;
-            box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
-        }
-        .form-control.bruta:focus  { border-color: #d97706; box-shadow: 0 0 0 3px rgba(217,119,6,0.12); }
-        .form-control.dosagem:focus { border-color: #059669; box-shadow: 0 0 0 3px rgba(5,150,105,0.12); }
-
-        .field-hint { font-size: 0.72rem; color: #94a3b8; margin-top: 3px; }
-
-        .badge-required {
-            font-size: 0.62rem; background: #eff6ff; color: #2563eb;
-            padding: 2px 6px; border-radius: 4px; font-weight: 600; margin-left: 4px; vertical-align: middle;
-        }
-        .badge-optional {
-            font-size: 0.62rem; background: #f8fafc; color: #94a3b8;
-            padding: 2px 6px; border-radius: 4px; font-weight: 600; margin-left: 4px; vertical-align: middle;
-        }
-        .badge-ml {
-            font-size: 0.62rem; background: #ecfdf5; color: #059669;
-            padding: 2px 6px; border-radius: 4px; font-weight: 600; margin-left: 4px; vertical-align: middle;
+        .reserv input:checked + label .reserv-ico { background: rgba(64,200,224,.18); color: var(--teal); }
+        .reserv input:checked + label .reserv-check {
+            background: var(--teal);
+            border-color: var(--teal);
+            color: #06202a;
         }
 
-        .section-box {
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 20px;
-        }
-        .section-box.tratada { background: #f8faff; border: 1px solid #e0e9ff; }
-        .section-box.bruta   { background: #fffbeb; border: 1px solid #fde68a; }
-        .section-box.dosagem { background: #f0fdf4; border: 1px solid #bbf7d0; }
-        .section-box.identif { background: #f8fafc; border: 1px solid #e2e8f0; }
-
-        .btn-salvar {
-            background: #2563eb; color: #fff; border: none;
-            border-radius: 8px; padding: 10px 24px;
-            font-size: 0.875rem; font-weight: 600; transition: background 0.15s;
-        }
-        .btn-salvar:hover { background: #1d4ed8; color: #fff; }
-
-        .btn-cancelar {
-            background: #f1f5f9; color: #475569; border: none;
-            border-radius: 8px; padding: 10px 20px; font-size: 0.875rem; font-weight: 500;
-        }
-        .btn-cancelar:hover { background: #e2e8f0; }
-
-        .ml-tip {
-            background: #ecfdf5; border: 1px solid #6ee7b7;
-            border-radius: 8px; padding: 10px 14px;
-            font-size: 0.78rem; color: #065f46;
-            margin-bottom: 20px;
+        .reserv input:focus-visible + label {
+            outline: 2px solid var(--teal);
+            outline-offset: 3px;
         }
 
-        @media (max-width: 768px) {
-            .sidebar { width: 100%; height: auto; position: relative; }
-            .main-content { margin-left: 0; padding: 16px; }
+        /* ═══ Barra de ações ═══ */
+        .acoes {
+            position: fixed;
+            left: var(--sidebar-w); right: 0; bottom: 0;
+            z-index: 40;
+            padding: 16px 34px;
+            display: flex; align-items: center; justify-content: flex-end;
+            gap: 12px; flex-wrap: wrap;
+            background: rgba(8, 11, 18, .78);
+            border-top: 1px solid var(--glass-edge);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
         }
+
+        .acoes-nota { margin-right: auto; font-size: .78rem; color: var(--ink-3); }
+
+        .btn-s {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 12px 22px; min-height: 46px;
+            border-radius: 999px;
+            font-size: .875rem; font-weight: 600;
+            text-decoration: none; cursor: pointer;
+            border: 1px solid var(--glass-edge);
+            background: var(--glass-2); color: var(--ink);
+            transition: background .22s var(--ease-out), border-color .22s var(--ease-out);
+        }
+        .btn-s:hover { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.18); color: var(--ink); }
+
+        .btn-s-fill { background: var(--blue); border-color: var(--blue); color: #fff; }
+        .btn-s-fill:hover { background: #2a96ff; border-color: #2a96ff; color: #fff; }
+
+        a:focus-visible, button:focus-visible, input:focus-visible {
+            outline: 2px solid var(--teal);
+            outline-offset: 3px;
+        }
+
+        /* ═══ Responsivo ═══ */
+        @media (max-width: 992px) {
+            .sidebar {
+                position: relative; width: 100%; height: auto;
+                flex-direction: row; align-items: center;
+                border-right: none; border-bottom: 1px solid var(--glass-edge);
+                overflow-x: auto;
+            }
+            .nav-stack { display: flex; gap: 5px; padding: 12px; flex: 0 1 auto; }
+            .nav-group, .nav-foot { display: none; }
+            .nav-link-s { margin-bottom: 0; white-space: nowrap; }
+            .brand { border-bottom: none; padding: 14px 18px; }
+            .shell { margin-left: 0; padding: 20px 18px 150px; }
+            .acoes { left: 0; padding: 14px 18px; }
+        }
+
+        @media (max-width: 575px) {
+            .shell { padding: 16px 14px 160px; }
+            .bloco { padding: 20px 18px 22px; }
+            .reserv { grid-template-columns: 1fr; }
+            .acoes-nota { margin-right: 0; width: 100%; margin-bottom: 4px; }
+            .acoes .btn-s { flex: 1 1 auto; justify-content: center; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            * { animation-duration: .001ms !important; animation-iteration-count: 1 !important; }
+        }
+
+        .js .page-head, .js .bloco { opacity: 0; }
     </style>
 </head>
 <body>
 
-<!-- SIDEBAR -->
+<div class="aurora" aria-hidden="true">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+</div>
+
+<!-- ═══ SIDEBAR ═══ -->
 <aside class="sidebar">
-    <div class="sidebar-brand" style="padding: 14px 16px 14px; display:flex; align-items:center; gap:12px;">
-        <img src="{% static 'img/Logo.png' %}" alt="SIGUÁ" style="width:54px; height:auto; flex-shrink:0;">
-        <div>
-            <div class="brand-sub" style="color:#e2e8f0; font-size:0.68rem; line-height:1.4; margin-top:0;">ETA Júlio Campos<br>DAE Várzea Grande/MT</div>
-        </div>
+    <div class="brand">
+        <img src="{% static 'img/Logo.png' %}" alt="SIGUÁ">
+        <div class="brand-unit">ETA Júlio Campos<br>DAE Várzea Grande</div>
     </div>
-    <nav class="sidebar-nav">
-        <div class="sidebar-label">Principal</div>
-        <a href="{% url 'dashboard' %}" class="nav-item-link">
-            <i class="bi bi-speedometer2"></i> Dashboard
+
+    <nav class="nav-stack">
+        <div class="nav-group">Principal</div>
+        <a href="{% url 'dashboard' %}" class="nav-link-s">
+            <i class="bi bi-grid-1x2" aria-hidden="true"></i> Dashboard
         </a>
-        <a href="{% url 'nova_leitura' %}" class="nav-item-link active">
-            <i class="bi bi-plus-circle"></i> Nova Leitura
+        <a href="{% url 'nova_leitura' %}" class="nav-link-s active" aria-current="page">
+            <i class="bi bi-plus-circle" aria-hidden="true"></i> Nova leitura
         </a>
-        <a href="#" class="nav-item-link">
-            <i class="bi bi-file-earmark-bar-graph"></i> Relatório
+        <a href="{% url 'relatorio' %}" class="nav-link-s">
+            <i class="bi bi-file-earmark-text" aria-hidden="true"></i> Relatório
         </a>
-        <div class="sidebar-label">Sistema</div>
-        <a href="#" class="nav-item-link">
-            <i class="bi bi-sliders"></i> Configurações
+
+        <div class="nav-group">Sistema</div>
+        <a href="{% url 'configuracoes' %}" class="nav-link-s">
+            <i class="bi bi-sliders2" aria-hidden="true"></i> Configurações
         </a>
-        <a href="{% url 'logout' %}" class="nav-item-link">
-            <i class="bi bi-box-arrow-right"></i> Sair
+        <a href="{% url 'logout' %}" class="nav-link-s">
+            <i class="bi bi-box-arrow-right" aria-hidden="true"></i> Sair
         </a>
     </nav>
-    <div class="sidebar-footer">
-        <div style="color:#e2e8f0; font-size:0.78rem; font-weight:600;">
-            <i class="bi bi-person-circle me-1"></i>
-            {{ request.user.get_full_name|default:request.user.username }}
+
+    <div class="nav-foot">
+        <div class="who">
+            <span class="who-badge">{{ request.user.username|slice:":2"|upper }}</span>
+            <div>
+                <div class="who-name">{{ request.user.get_full_name|default:request.user.username }}</div>
+                <div class="who-sub">Operador</div>
+            </div>
         </div>
-        <small>Portaria GM/MS nº 888/2021</small>
     </div>
 </aside>
 
-<!-- CONTEÚDO -->
-<main class="main-content">
+<!-- ═══ CONTEÚDO ═══ -->
+<main class="shell">
 
-    <div class="mb-4">
-        <div style="font-size:1.15rem; font-weight:700; color:#0f172a;">Registrar Nova Leitura</div>
-        <div style="font-size:0.8rem; color:#64748b; margin-top:2px;">Preencha os parâmetros coletados manualmente</div>
+    <div class="page-head" id="pageHead">
+        <a href="{% url 'dashboard' %}" class="crumb">
+            <i class="bi bi-arrow-left" aria-hidden="true"></i> Voltar ao dashboard
+        </a>
+        <h1 class="page-h">Registrar leitura</h1>
+        <p class="page-p">
+            Preencha o que foi medido nesta coleta. Nenhum campo é obrigatório sozinho,
+            então deixe em branco o que não foi aferido — a conformidade é calculada
+            apenas sobre o que você informar.
+        </p>
     </div>
 
     {% if messages %}
-    {% for msg in messages %}
-    <div class="alert alert-{% if msg.tags == 'error' %}danger{% else %}{{ msg.tags }}{% endif %} alert-dismissible fade show mb-4" role="alert" style="border-radius:10px; font-size:0.85rem;">
-        {{ msg }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-    {% endfor %}
+        {% for m in messages %}
+        <div class="alerta {% if m.tags == 'error' %}alerta-erro{% else %}alerta-ok{% endif %}" role="alert">
+            <i class="bi {% if m.tags == 'error' %}bi-exclamation-triangle-fill{% else %}bi-check-circle-fill{% endif %}" aria-hidden="true"></i>
+            <span>{{ m }}</span>
+        </div>
+        {% endfor %}
     {% endif %}
 
-    <div class="ml-tip">
-        <i class="bi bi-robot me-1"></i>
-        <strong>Dica do modelo de ML:</strong> quanto mais campos você preencher (especialmente água bruta e dosagens), mais precisa será a recomendação de coagulante.
-    </div>
+    <form method="post" novalidate>
+        {% csrf_token %}
 
-    <div class="form-card">
-        <form method="POST" novalidate>
-            {% csrf_token %}
-
-            <!-- ÁGUA TRATADA -->
-            <div class="section-box tratada">
-                <div class="section-header">
-                    <span class="dot dot-blue"></span>
-                    <span style="font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:#1e40af;">
-                        Água Tratada
-                    </span>
-                    <span class="badge-required" style="margin-left:0;">obrigatório: Turbidez, Vazão, Nível</span>
-                </div>
-                <div class="row g-3">
-                    <div class="col-md-3">
-                        <label class="form-label">Turbidez <span class="badge-required">obrigatório</span></label>
-                        <input type="number" step="0.01" min="0" name="turbidez_ntu"
-                               class="form-control" placeholder="ex: 1.2"
-                               value="{{ form_data.turbidez_ntu|default:'' }}" required>
-                        <div class="field-hint">NTU · limite: 5,0</div>
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">Vazão <span class="badge-required">obrigatório</span></label>
-                        <input type="number" step="0.1" min="0" name="vazao_ls"
-                               class="form-control" placeholder="ex: 120.5"
-                               value="{{ form_data.vazao_ls|default:'' }}" required>
-                        <div class="field-hint">L/s</div>
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">Nível <span class="badge-required">obrigatório</span></label>
-                        <input type="number" step="0.1" min="0" name="nivel_cm"
-                               class="form-control" placeholder="ex: 85"
-                               value="{{ form_data.nivel_cm|default:'' }}" required>
-                        <div class="field-hint">cm</div>
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">Vazão de Entrada <span class="badge-optional">opcional</span></label>
-                        <input type="number" step="1" min="0" name="vazao_m3_dia"
-                               class="form-control" placeholder="ex: 8640"
-                               value="{{ form_data.vazao_m3_dia|default:'' }}">
-                        <div class="field-hint">M³/dia</div>
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">pH Tratado</label>
-                        <input type="number" step="0.01" min="0" max="14" name="ph"
-                               class="form-control" placeholder="ex: 7.2"
-                               value="{{ form_data.ph|default:'' }}">
-                        <div class="field-hint">limite: 6,0 – 9,5</div>
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">Cloro Residual</label>
-                        <input type="number" step="0.01" min="0" name="cloro_residual_mgl"
-                               class="form-control" placeholder="ex: 1.1"
-                               value="{{ form_data.cloro_residual_mgl|default:'' }}">
-                        <div class="field-hint">mg/L · limite: 0,2 – 5,0</div>
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">Cor Aparente</label>
-                        <input type="number" step="0.1" min="0" name="cor_uh"
-                               class="form-control" placeholder="ex: 5.0"
-                               value="{{ form_data.cor_uh|default:'' }}">
-                        <div class="field-hint">uH · limite: 15</div>
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">Coliformes Totais</label>
-                        <input type="number" step="0.01" min="0" name="coliformes_ufc"
-                               class="form-control" placeholder="ex: 0"
-                               value="{{ form_data.coliformes_ufc|default:'' }}">
-                        <div class="field-hint">UFC/100mL · esperado: 0</div>
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">Alcalinidade Tratada</label>
-                        <input type="number" step="0.1" min="0" name="alcalinidade_tratada"
-                               class="form-control" placeholder="ex: 35.0"
-                               value="{{ form_data.alcalinidade_tratada|default:'' }}">
-                        <div class="field-hint">mg/L CaCO₃</div>
-                    </div>
+        <!-- ─── Água tratada ─── -->
+        <section class="bloco glass">
+            <div class="bloco-head">
+                <span class="bloco-ico tratada"><i class="bi bi-droplet-fill" aria-hidden="true"></i></span>
+                <div>
+                    <div class="bloco-h">Água tratada</div>
+                    <div class="bloco-sub">Amostra na saída do reservatório</div>
                 </div>
             </div>
 
-            <!-- ÁGUA BRUTA -->
-            <div class="section-box bruta">
-                <div class="section-header">
-                    <span class="dot dot-yellow"></span>
-                    <span style="font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:#92400e;">
-                        Água Bruta
-                    </span>
-                    <span class="badge-ml">alimenta o ML</span>
+            <fieldset style="border:0; padding:0; margin:0;">
+                <legend class="campo" style="font-size:.8rem; font-weight:600; color:var(--ink-2); margin-bottom:9px; float:none; width:auto;">
+                    De qual reservatório é a amostra
+                </legend>
+                <div class="reserv">
+                    {% for valor, rotulo in reservatorios %}
+                    <div style="position:relative;">
+                        <input type="radio" name="tipo_reservatorio" id="res_{{ valor }}" value="{{ valor }}"
+                               {% if form_data.tipo_reservatorio == valor %}checked{% endif %}>
+                        <label for="res_{{ valor }}">
+                            <span class="reserv-ico">
+                                <i class="bi {% if valor == 'metalico' %}bi-database{% else %}bi-bricks{% endif %}" aria-hidden="true"></i>
+                            </span>
+                            <span>
+                                <span class="reserv-nome">{{ rotulo }}</span>
+                                <span class="reserv-sub" style="display:block;">Reservatório {{ rotulo|lower }}</span>
+                            </span>
+                            <span class="reserv-check" aria-hidden="true"><i class="bi bi-check-lg"></i></span>
+                        </label>
+                    </div>
+                    {% endfor %}
                 </div>
-                <div class="row g-3">
-                    <div class="col-md-3">
-                        <label class="form-label">Turbidez Bruta</label>
-                        <input type="number" step="0.01" min="0" name="turbidez_bruta_ntu"
-                               class="form-control bruta" placeholder="ex: 45.0"
-                               value="{{ form_data.turbidez_bruta_ntu|default:'' }}">
-                        <div class="field-hint">NTU</div>
+            </fieldset>
+
+            <div class="row g-3">
+                <div class="col-md-6 col-xl-3">
+                    <div class="campo">
+                        <label for="cor_uh">Cor aparente</label>
+                        <div class="campo-caixa">
+                            <input type="text" inputmode="decimal" id="cor_uh" name="cor_uh"
+                                   placeholder="0,0" value="{{ form_data.cor_uh|default:'' }}">
+                            <span class="campo-unidade">uH</span>
+                        </div>
+                        <div class="campo-ajuda">Até 15 uH</div>
                     </div>
-                    <div class="col-md-3">
-                        <label class="form-label">Cor Bruta</label>
-                        <input type="number" step="0.1" min="0" name="cor_bruta_uh"
-                               class="form-control bruta" placeholder="ex: 120.0"
-                               value="{{ form_data.cor_bruta_uh|default:'' }}">
-                        <div class="field-hint">uH</div>
+                </div>
+
+                <div class="col-md-6 col-xl-3">
+                    <div class="campo">
+                        <label for="turbidez_ntu">Turbidez</label>
+                        <div class="campo-caixa">
+                            <input type="text" inputmode="decimal" id="turbidez_ntu" name="turbidez_ntu"
+                                   placeholder="0,00" value="{{ form_data.turbidez_ntu|default:'' }}">
+                            <span class="campo-unidade">NTU</span>
+                        </div>
+                        <div class="campo-ajuda">Até 5,0 NTU</div>
                     </div>
-                    <div class="col-md-3">
-                        <label class="form-label">pH Bruto</label>
-                        <input type="number" step="0.01" min="0" max="14" name="ph_bruto"
-                               class="form-control bruta" placeholder="ex: 6.8"
-                               value="{{ form_data.ph_bruto|default:'' }}">
-                        <div class="field-hint">0 – 14</div>
+                </div>
+
+                <div class="col-md-6 col-xl-3">
+                    <div class="campo">
+                        <label for="cloro_residual_mgl">Cloro residual</label>
+                        <div class="campo-caixa">
+                            <input type="text" inputmode="decimal" id="cloro_residual_mgl" name="cloro_residual_mgl"
+                                   placeholder="0,00" value="{{ form_data.cloro_residual_mgl|default:'' }}">
+                            <span class="campo-unidade">mg/L</span>
+                        </div>
+                        <div class="campo-ajuda">De 0,2 a 5,0 mg/L</div>
                     </div>
-                    <div class="col-md-3">
-                        <label class="form-label">Alcalinidade Bruta</label>
-                        <input type="number" step="0.1" min="0" name="alcalinidade_bruta"
-                               class="form-control bruta" placeholder="ex: 28.0"
-                               value="{{ form_data.alcalinidade_bruta|default:'' }}">
-                        <div class="field-hint">mg/L CaCO₃</div>
+                </div>
+
+                <div class="col-md-6 col-xl-3">
+                    <div class="campo">
+                        <label for="ph">pH</label>
+                        <div class="campo-caixa">
+                            <input type="text" inputmode="decimal" id="ph" name="ph"
+                                   placeholder="0,00" value="{{ form_data.ph|default:'' }}">
+                        </div>
+                        <div class="campo-ajuda">De 6,0 a 9,5</div>
                     </div>
+                </div>
+
+                <div class="col-md-6 col-xl-3">
+                    <div class="campo">
+                        <label for="coliformes_ufc">Coliformes totais</label>
+                        <div class="campo-caixa">
+                            <input type="text" inputmode="decimal" id="coliformes_ufc" name="coliformes_ufc"
+                                   placeholder="0" value="{{ form_data.coliformes_ufc|default:'' }}">
+                            <span class="campo-unidade">UFC</span>
+                        </div>
+                        <div class="campo-ajuda">Ausência exigida</div>
+                    </div>
+                </div>
+
+                <div class="col-md-6 col-xl-3">
+                    <div class="campo">
+                        <label for="alcalinidade_tratada">Alcalinidade</label>
+                        <div class="campo-caixa">
+                            <input type="text" inputmode="decimal" id="alcalinidade_tratada" name="alcalinidade_tratada"
+                                   placeholder="0,0" value="{{ form_data.alcalinidade_tratada|default:'' }}">
+                            <span class="campo-unidade">mg/L</span>
+                        </div>
+                        <div class="campo-ajuda">Sem limite legal</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ─── Água bruta ─── -->
+        <section class="bloco glass">
+            <div class="bloco-head">
+                <span class="bloco-ico bruta"><i class="bi bi-moisture" aria-hidden="true"></i></span>
+                <div>
+                    <div class="bloco-h">Água bruta</div>
+                    <div class="bloco-sub">Amostra na entrada, antes do tratamento</div>
                 </div>
             </div>
 
-            <!-- DOSAGENS -->
-            <div class="section-box dosagem">
-                <div class="section-header">
-                    <span class="dot dot-green"></span>
-                    <span style="font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:#065f46;">
-                        Dosagens Aplicadas
-                    </span>
-                    <span class="badge-ml">treina o ML</span>
+            <div class="row g-3">
+                <div class="col-md-6 col-xl-3">
+                    <div class="campo">
+                        <label for="turbidez_bruta_ntu">Turbidez bruta</label>
+                        <div class="campo-caixa">
+                            <input type="text" inputmode="decimal" id="turbidez_bruta_ntu" name="turbidez_bruta_ntu"
+                                   placeholder="0,0" value="{{ form_data.turbidez_bruta_ntu|default:'' }}">
+                            <span class="campo-unidade">NTU</span>
+                        </div>
+                    </div>
                 </div>
-                <div class="row g-3">
-                    <div class="col-md-4">
-                        <label class="form-label">Sulfato de Alumínio</label>
-                        <input type="number" step="0.1" min="0" name="sulfato_aluminio_kg"
-                               class="form-control dosagem" placeholder="ex: 12.5"
-                               value="{{ form_data.sulfato_aluminio_kg|default:'' }}">
-                        <div class="field-hint">Kg</div>
+
+                <div class="col-md-6 col-xl-3">
+                    <div class="campo">
+                        <label for="cor_bruta_uh">Cor bruta</label>
+                        <div class="campo-caixa">
+                            <input type="text" inputmode="decimal" id="cor_bruta_uh" name="cor_bruta_uh"
+                                   placeholder="0,0" value="{{ form_data.cor_bruta_uh|default:'' }}">
+                            <span class="campo-unidade">uH</span>
+                        </div>
                     </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Policloreto de Alumínio (PAC)</label>
-                        <input type="number" step="0.1" min="0" name="policloreto_aluminio_l"
-                               class="form-control dosagem" placeholder="ex: 5.0"
-                               value="{{ form_data.policloreto_aluminio_l|default:'' }}">
-                        <div class="field-hint">Litros</div>
+                </div>
+
+                <div class="col-md-6 col-xl-3">
+                    <div class="campo">
+                        <label for="ph_bruto">pH bruto</label>
+                        <div class="campo-caixa">
+                            <input type="text" inputmode="decimal" id="ph_bruto" name="ph_bruto"
+                                   placeholder="0,00" value="{{ form_data.ph_bruto|default:'' }}">
+                        </div>
                     </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Hipoclorito de Sódio</label>
-                        <input type="number" step="0.1" min="0" name="hipoclorito_sodio_kg"
-                               class="form-control dosagem" placeholder="ex: 3.2"
-                               value="{{ form_data.hipoclorito_sodio_kg|default:'' }}">
-                        <div class="field-hint">Kg</div>
+                </div>
+
+                <div class="col-md-6 col-xl-3">
+                    <div class="campo">
+                        <label for="alcalinidade_bruta">Alcalinidade bruta</label>
+                        <div class="campo-caixa">
+                            <input type="text" inputmode="decimal" id="alcalinidade_bruta" name="alcalinidade_bruta"
+                                   placeholder="0,0" value="{{ form_data.alcalinidade_bruta|default:'' }}">
+                            <span class="campo-unidade">mg/L</span>
+                        </div>
                     </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ─── Vazão ─── -->
+        <section class="bloco glass">
+            <div class="bloco-head">
+                <span class="bloco-ico vazao"><i class="bi bi-water" aria-hidden="true"></i></span>
+                <div>
+                    <div class="bloco-h">Vazão</div>
+                    <div class="bloco-sub">Medida na calha Parshall</div>
                 </div>
             </div>
 
-            <!-- IDENTIFICAÇÃO -->
-            <div class="section-box identif">
-                <div class="section-header">
-                    <span style="font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:#475569;">
-                        Identificação da Coleta
-                    </span>
-                </div>
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label class="form-label">Operador Responsável</label>
-                        <input type="text" name="operador" class="form-control"
-                               placeholder="Nome do operador"
-                               value="{{ form_data.operador|default:request.user.get_full_name|default:request.user.username }}">
+            <div class="row g-3">
+                <div class="col-md-6 col-xl-3">
+                    <div class="campo">
+                        <label for="vazao_ls">Vazão tratada</label>
+                        <div class="campo-caixa">
+                            <input type="text" inputmode="decimal" id="vazao_ls" name="vazao_ls"
+                                   placeholder="0,0" value="{{ form_data.vazao_ls|default:'' }}">
+                            <span class="campo-unidade">L/s</span>
+                        </div>
+                        <div class="campo-ajuda">Deixe em branco quando o sensor ultrassônico enviar o valor</div>
                     </div>
                 </div>
             </div>
+        </section>
 
-            <!-- AÇÕES -->
-            <div class="d-flex gap-2 pt-2">
-                <button type="submit" class="btn btn-salvar">
-                    <i class="bi bi-check-lg me-1"></i> Salvar Leitura
-                </button>
-                <a href="{% url 'dashboard' %}" class="btn btn-cancelar">Cancelar</a>
+        <!-- ─── Dosagens ─── -->
+        <section class="bloco glass">
+            <div class="bloco-head">
+                <span class="bloco-ico dose"><i class="bi bi-eyedropper" aria-hidden="true"></i></span>
+                <div>
+                    <div class="bloco-h">Dosagens aplicadas</div>
+                    <div class="bloco-sub">Insumos usados no tratamento</div>
+                </div>
             </div>
-        </form>
-    </div>
+
+            <div class="row g-3">
+                <div class="col-md-6 col-xl-3">
+                    <div class="campo">
+                        <label for="sulfato_aluminio_kg">Sulfato de alumínio</label>
+                        <div class="campo-caixa">
+                            <input type="text" inputmode="decimal" id="sulfato_aluminio_kg" name="sulfato_aluminio_kg"
+                                   placeholder="0,0" value="{{ form_data.sulfato_aluminio_kg|default:'' }}">
+                            <span class="campo-unidade">kg</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6 col-xl-3">
+                    <div class="campo">
+                        <label for="policloreto_aluminio_l">Policloreto de alumínio</label>
+                        <div class="campo-caixa">
+                            <input type="text" inputmode="decimal" id="policloreto_aluminio_l" name="policloreto_aluminio_l"
+                                   placeholder="0,0" value="{{ form_data.policloreto_aluminio_l|default:'' }}">
+                            <span class="campo-unidade">L</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6 col-xl-3">
+                    <div class="campo">
+                        <label for="hipoclorito_sodio_kg">Hipoclorito de sódio</label>
+                        <div class="campo-caixa">
+                            <input type="text" inputmode="decimal" id="hipoclorito_sodio_kg" name="hipoclorito_sodio_kg"
+                                   placeholder="0,0" value="{{ form_data.hipoclorito_sodio_kg|default:'' }}">
+                            <span class="campo-unidade">kg</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ─── Identificação ─── -->
+        <section class="bloco glass">
+            <div class="bloco-head">
+                <span class="bloco-ico ident"><i class="bi bi-person-badge" aria-hidden="true"></i></span>
+                <div>
+                    <div class="bloco-h">Identificação</div>
+                    <div class="bloco-sub">Quem realizou a coleta</div>
+                </div>
+            </div>
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="campo">
+                        <label for="operador">Operador</label>
+                        <div class="campo-caixa">
+                            <input type="text" id="operador" name="operador" style="padding-right:15px;"
+                                   placeholder="{{ request.user.get_full_name|default:request.user.username }}"
+                                   value="{{ form_data.operador|default:'' }}">
+                        </div>
+                        <div class="campo-ajuda">Em branco, registra o seu usuário</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="acoes">
+            <span class="acoes-nota">A data e a hora são gravadas automaticamente</span>
+            <a href="{% url 'dashboard' %}" class="btn-s">Cancelar</a>
+            <button type="submit" class="btn-s btn-s-fill">
+                <i class="bi bi-check-lg" aria-hidden="true"></i> Salvar leitura
+            </button>
+        </div>
+    </form>
 </main>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+(function () {
+    "use strict";
+
+    var CALMO = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    var ANIMAR = !CALMO && typeof gsap !== 'undefined';
+
+    function revelarTudo() {
+        document.querySelectorAll('.page-head, .bloco').forEach(function (el) {
+            el.style.opacity = '1';
+            el.style.transform = 'none';
+        });
+        document.querySelectorAll('.blob').forEach(function (b) { b.style.opacity = '.55'; });
+    }
+
+    if (!ANIMAR) {
+        revelarTudo();
+    } else {
+        gsap.to('.blob', { opacity: .6, duration: 1.5, stagger: .18, ease: 'power1.out' });
+        gsap.timeline({ defaults: { ease: 'power2.out' } })
+            .fromTo('#pageHead', { opacity: 0, y: 22 }, { opacity: 1, y: 0, duration: .6 })
+            .fromTo('.bloco', { opacity: 0, y: 22 }, { opacity: 1, y: 0, duration: .5, stagger: .08 }, '-=0.3');
+    }
+
+    // Aceita vírgula como separador decimal, como o operador escreve.
+    document.querySelectorAll('input[inputmode="decimal"]').forEach(function (campo) {
+        campo.addEventListener('input', function () {
+            var limpo = campo.value.replace(/[^0-9.,-]/g, '');
+            if (limpo !== campo.value) { campo.value = limpo; }
+        });
+    });
+})();
+</script>
 </body>
 </html>
-

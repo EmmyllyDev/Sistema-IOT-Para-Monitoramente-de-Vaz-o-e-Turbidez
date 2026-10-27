@@ -6,3 +6,6 @@ venv/
 resultados/
 *.xlsx
 monitoramento/ia/modelo_treinado.pkl
+.env.backup-antes-deploy
+staticfiles/
+db.sqlite3

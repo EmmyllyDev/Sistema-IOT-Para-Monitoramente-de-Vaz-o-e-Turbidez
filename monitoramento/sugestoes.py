@@ -32,34 +32,35 @@ def gerar_sugestoes(leitura):
             'modo_label': modo_label,
         })
 
-    # Turbidez
-    if leitura.turbidez_ntu > 5.0:
-        sugestoes.append({
-            'parametro': 'Turbidez',
-            'valor': f'{leitura.turbidez_ntu:.2f} NTU',
-            'status': 'critico',
-            'mensagem': (
-                f'Turbidez de {leitura.turbidez_ntu:.2f} NTU está acima do limite de 5,0 NTU (Portaria 888/2021). '
-                'Verifique a dosagem de coagulante (sulfato de alumínio) e inspecione os filtros.'
-            ),
-        })
-    elif leitura.turbidez_ntu > 1.0:
-        sugestoes.append({
-            'parametro': 'Turbidez',
-            'valor': f'{leitura.turbidez_ntu:.2f} NTU',
-            'status': 'alerta',
-            'mensagem': (
-                f'Turbidez de {leitura.turbidez_ntu:.2f} NTU está elevada. '
-                'Considere aumentar a dosagem de coagulante e intensifique o monitoramento nas próximas coletas.'
-            ),
-        })
-    else:
-        sugestoes.append({
-            'parametro': 'Turbidez',
-            'valor': f'{leitura.turbidez_ntu:.2f} NTU',
-            'status': 'ok',
-            'mensagem': 'Turbidez dentro do padrão aceitável.',
-        })
+    # Turbidez — opcional desde que o sensor ultrassônico passou a enviá-la
+    if leitura.turbidez_ntu is not None:
+        if leitura.turbidez_ntu > 5.0:
+            sugestoes.append({
+                'parametro': 'Turbidez',
+                'valor': f'{leitura.turbidez_ntu:.2f} NTU',
+                'status': 'critico',
+                'mensagem': (
+                    f'Turbidez de {leitura.turbidez_ntu:.2f} NTU está acima do limite de 5,0 NTU (Portaria 888/2021). '
+                    'Verifique a dosagem de coagulante (sulfato de alumínio) e inspecione os filtros.'
+                ),
+            })
+        elif leitura.turbidez_ntu > 1.0:
+            sugestoes.append({
+                'parametro': 'Turbidez',
+                'valor': f'{leitura.turbidez_ntu:.2f} NTU',
+                'status': 'alerta',
+                'mensagem': (
+                    f'Turbidez de {leitura.turbidez_ntu:.2f} NTU está elevada. '
+                    'Considere aumentar a dosagem de coagulante e intensifique o monitoramento nas próximas coletas.'
+                ),
+            })
+        else:
+            sugestoes.append({
+                'parametro': 'Turbidez',
+                'valor': f'{leitura.turbidez_ntu:.2f} NTU',
+                'status': 'ok',
+                'mensagem': 'Turbidez dentro do padrão aceitável.',
+            })
 
     # pH
     if leitura.ph is not None:

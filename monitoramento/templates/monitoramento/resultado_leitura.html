@@ -4,351 +4,714 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SIGUÁ — Resultado da Leitura</title>
+    <title>SIGUÁ — Resultado da leitura</title>
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script>document.documentElement.className += ' js';</script>
 
     <style>
-        *, body { font-family: 'Inter', sans-serif; }
-        body { background-color: #f1f5f9; overflow-x: hidden; }
+        :root {
+            --field:      #080b12;
+            --glass:      rgba(255, 255, 255, .055);
+            --glass-2:    rgba(255, 255, 255, .035);
+            --glass-edge: rgba(255, 255, 255, .085);
+            --glass-top:  rgba(255, 255, 255, .14);
 
-        /* ── Sidebar ── */
-        .sidebar { position: fixed; top: 0; left: 0; width: 220px; height: 100vh; background: #0f2744; display: flex; flex-direction: column; z-index: 100; }
-        .sidebar-brand { padding: 20px 20px 16px; border-bottom: 1px solid rgba(255,255,255,0.08); }
-        .sidebar-brand .brand-name { color: #fff; font-size: 1.1rem; font-weight: 700; letter-spacing: 0.05em; }
-        .sidebar-brand .brand-sub  { color: #94a3b8; font-size: 0.7rem; line-height: 1.3; margin-top: 2px; }
-        .sidebar-nav   { padding: 16px 12px; flex: 1; }
-        .sidebar-label { color: #475569; font-size: 0.65rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; padding: 0 8px; margin-bottom: 6px; margin-top: 12px; }
-        .nav-item-link { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 8px; color: #94a3b8; text-decoration: none; font-size: 0.85rem; font-weight: 500; transition: background 0.15s, color 0.15s; margin-bottom: 2px; }
-        .nav-item-link:hover  { background: rgba(255,255,255,0.06); color: #e2e8f0; }
-        .nav-item-link.active { background: rgba(37,99,235,0.25); color: #93c5fd; }
-        .nav-item-link i { font-size: 1rem; width: 18px; text-align: center; }
-        .sidebar-footer { padding: 16px; border-top: 1px solid rgba(255,255,255,0.08); }
-        .sidebar-footer small { color: #475569; font-size: 0.7rem; }
+            --ink:    #f5f7fa;
+            --ink-2:  #9aa6b8;
+            --ink-3:  #7886a0;
 
-        /* ── Main ── */
-        .main-content { margin-left: 220px; padding: 28px 28px 40px; min-height: 100vh; }
+            --teal:   #40c8e0;
+            --orange: #ff9f0a;
+            --green:  #30d158;
+            --red:    #ff453a;
+            --blue:   #0a84ff;
 
-        /* ── Alerta crítico ── */
-        .banner-critico {
-            background: #fef2f2;
-            border: 1px solid #fecaca;
-            border-left: 4px solid #dc2626;
-            border-radius: 10px;
-            padding: 14px 18px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 24px;
+            --r-lg: 26px;
+            --r-md: 20px;
+            --r-sm: 14px;
+
+            --sidebar-w: 248px;
+            --ease-out: cubic-bezier(.22, 1, .36, 1);
         }
-        .banner-critico i { color: #dc2626; font-size: 1.3rem; flex-shrink: 0; }
-        .banner-critico-text { font-size: 0.85rem; font-weight: 600; color: #991b1b; }
-        .banner-critico-sub  { font-size: 0.78rem; color: #b91c1c; margin-top: 1px; }
 
-        /* ── Sugestão card ── */
-        .sugestao-card {
-            background: #fff;
-            border-radius: 10px;
-            padding: 16px 18px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-            border-left: 4px solid transparent;
-            display: flex;
-            gap: 14px;
-            align-items: flex-start;
+        * { font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif; }
+
+        body {
+            background: var(--field);
+            color: var(--ink);
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            letter-spacing: -.011em;
         }
-        .sugestao-card.ok      { border-left-color: #16a34a; }
-        .sugestao-card.alerta  { border-left-color: #d97706; }
-        .sugestao-card.critico { border-left-color: #dc2626; }
-        .sugestao-card.info    { border-left-color: #2563eb; }
 
-        .sugestao-icon {
-            width: 34px; height: 34px; border-radius: 8px;
+        /* ═══ Aurora ═══ */
+        .aurora { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+        .blob { position: absolute; border-radius: 50%; filter: blur(100px); opacity: 0; will-change: transform, opacity; }
+        .blob-1 { width: 620px; height: 620px; top: -210px; left: -130px;
+                  background: radial-gradient(circle, rgba(64,200,224,.4), transparent 68%); }
+        .blob-2 { width: 560px; height: 560px; top: 22%; right: -170px;
+                  background: radial-gradient(circle, rgba(10,132,255,.32), transparent 68%); }
+        .blob-3 { width: 500px; height: 500px; bottom: -190px; left: 34%;
+                  background: radial-gradient(circle, rgba(94,92,230,.28), transparent 68%); }
+
+        /* ═══ Vidro ═══ */
+        .glass {
+            position: relative;
+            background: var(--glass);
+            border: 1px solid var(--glass-edge);
+            border-radius: var(--r-md);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+        }
+        .glass::before {
+            content: '';
+            position: absolute; top: 0; left: 14px; right: 14px; height: 1px;
+            background: linear-gradient(90deg, transparent, var(--glass-top), transparent);
+            pointer-events: none;
+        }
+
+        /* ═══ Sidebar ═══ */
+        .sidebar {
+            position: fixed; top: 0; left: 0;
+            width: var(--sidebar-w); height: 100vh; z-index: 50;
+            display: flex; flex-direction: column;
+            background: rgba(255, 255, 255, .03);
+            border-right: 1px solid var(--glass-edge);
+            backdrop-filter: blur(24px) saturate(180%);
+            -webkit-backdrop-filter: blur(24px) saturate(180%);
+        }
+        .brand {
+            padding: 22px 22px 20px;
+            display: flex; align-items: center; gap: 13px;
+            border-bottom: 1px solid var(--glass-edge);
+        }
+        .brand img { width: 46px; height: auto; flex-shrink: 0; }
+        .brand-unit { font-size: .7rem; line-height: 1.5; color: var(--ink-2); font-weight: 500; }
+
+        .nav-stack { padding: 20px 14px; flex: 1; }
+        .nav-group { font-size: .68rem; font-weight: 600; color: var(--ink-3); padding: 0 12px; margin: 20px 0 8px; }
+        .nav-group:first-child { margin-top: 0; }
+
+        .nav-link-s {
+            display: flex; align-items: center; gap: 12px;
+            padding: 11px 13px; min-height: 44px;
+            border-radius: var(--r-sm);
+            color: var(--ink-2); text-decoration: none;
+            font-size: .875rem; font-weight: 500;
+            margin-bottom: 3px; cursor: pointer;
+            transition: background .22s var(--ease-out), color .22s var(--ease-out);
+        }
+        .nav-link-s:hover { background: rgba(255,255,255,.06); color: var(--ink); }
+        .nav-link-s.active {
+            background: rgba(64,200,224,.13);
+            border: 1px solid rgba(64,200,224,.22);
+            color: #a8ecf7; font-weight: 600;
+        }
+        .nav-link-s i { font-size: 1.05rem; width: 19px; text-align: center; }
+
+        .nav-foot { padding: 16px 18px; border-top: 1px solid var(--glass-edge); }
+        .who { display: flex; align-items: center; gap: 11px; }
+        .who-badge {
+            width: 34px; height: 34px; border-radius: 50%;
+            background: linear-gradient(135deg, rgba(64,200,224,.3), rgba(10,132,255,.3));
+            border: 1px solid var(--glass-edge);
+            display: flex; align-items: center; justify-content: center;
+            font-size: .74rem; font-weight: 700; flex-shrink: 0;
+        }
+        .who-name { font-size: .82rem; font-weight: 600; }
+        .who-sub  { font-size: .68rem; color: var(--ink-3); }
+
+        /* ═══ Layout ═══ */
+        .shell {
+            position: relative; z-index: 1;
+            margin-left: var(--sidebar-w);
+            padding: 30px 34px 60px;
+            min-height: 100vh;
+        }
+
+        .crumb {
+            display: inline-flex; align-items: center; gap: 7px;
+            font-size: .78rem; font-weight: 600;
+            color: var(--ink-3); text-decoration: none; margin-bottom: 12px;
+            transition: color .22s var(--ease-out);
+        }
+        .crumb:hover { color: var(--teal); }
+
+        /* ═══ Veredito ═══ */
+        .veredito {
+            padding: 30px 34px;
+            border-radius: var(--r-lg);
+            margin-bottom: 20px;
+            opacity: 0;
+        }
+
+        .selo {
+            display: inline-flex; align-items: center; gap: 9px;
+            padding: 7px 15px 7px 12px;
+            border-radius: 999px;
+            font-size: .8rem; font-weight: 600;
+            margin-bottom: 18px;
+        }
+        .selo-ok  { background: rgba(48,209,88,.14); border: 1px solid rgba(48,209,88,.3); color: #7ee89b; }
+        .selo-bad { background: rgba(255,69,58,.14); border: 1px solid rgba(255,69,58,.32); color: #ff9a93; }
+        .selo-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+        .selo-ok  .selo-dot { background: var(--green); }
+        .selo-bad .selo-dot { background: var(--red); }
+
+        .veredito-h {
+            font-size: clamp(1.5rem, 2.8vw, 2.1rem);
+            font-weight: 700; letter-spacing: -.035em; line-height: 1.14;
+            margin: 0 0 12px; max-width: 24ch;
+        }
+
+        .veredito-p {
+            font-size: .9rem; line-height: 1.6;
+            color: var(--ink-2); max-width: 60ch; margin: 0;
+        }
+
+        .meta-linha {
+            display: flex; flex-wrap: wrap; gap: 10px;
+            margin-top: 20px;
+        }
+
+        .meta-chip {
+            display: inline-flex; align-items: center; gap: 7px;
+            padding: 7px 13px;
+            background: rgba(255,255,255,.045);
+            border: 1px solid var(--glass-edge);
+            border-radius: 999px;
+            font-size: .775rem; font-weight: 600; color: var(--ink-2);
+        }
+        .meta-chip i { font-size: .85rem; color: var(--ink-3); }
+
+        /* ═══ Títulos de seção ═══ */
+        .sec-h {
+            font-size: 1.02rem; font-weight: 700; letter-spacing: -.02em;
+            display: flex; align-items: center; gap: 9px;
+            margin-bottom: 14px;
+        }
+        .sec-h i { font-size: 1.05rem; color: var(--ink-3); }
+
+        /* ═══ Sugestões ═══ */
+        .sug {
+            display: flex; gap: 15px;
+            padding: 18px 20px;
+            border-radius: var(--r-md);
+            margin-bottom: 12px;
+            background: var(--glass);
+            border: 1px solid var(--glass-edge);
+            border-left: 3px solid var(--marca, var(--ink-3));
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            opacity: 0;
+        }
+
+        .sug.critico { --marca: var(--red);    background: rgba(255,69,58,.07); }
+        .sug.alerta  { --marca: var(--orange); background: rgba(255,159,10,.06); }
+        .sug.ok      { --marca: var(--green); }
+        .sug.info    { --marca: var(--blue);   background: rgba(10,132,255,.06); }
+
+        .sug-ico {
+            width: 36px; height: 36px; border-radius: 11px;
             display: flex; align-items: center; justify-content: center;
             font-size: 1rem; flex-shrink: 0;
         }
-        .sugestao-icon.ok      { background: #f0fdf4; color: #16a34a; }
-        .sugestao-icon.alerta  { background: #fffbeb; color: #d97706; }
-        .sugestao-icon.critico { background: #fef2f2; color: #dc2626; }
-        .sugestao-icon.info    { background: #eff6ff; color: #2563eb; }
+        .sug.critico .sug-ico { background: rgba(255,69,58,.16);  color: #ff9a93; }
+        .sug.alerta  .sug-ico { background: rgba(255,159,10,.16); color: #ffce7a; }
+        .sug.ok      .sug-ico { background: rgba(48,209,88,.16);  color: #7ee89b; }
+        .sug.info    .sug-ico { background: rgba(10,132,255,.16); color: #8fc6ff; }
 
-        .sugestao-parametro {
-            font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
-            letter-spacing: 0.06em; color: #94a3b8;
-        }
-        .sugestao-valor {
-            font-size: 1rem; font-weight: 700; color: #0f172a; margin: 2px 0 4px;
-        }
-        .sugestao-valor.ok      { color: #15803d; }
-        .sugestao-valor.alerta  { color: #b45309; }
-        .sugestao-valor.critico { color: #b91c1c; }
-        .sugestao-valor.info    { color: #1d4ed8; }
-
-        .sugestao-mensagem {
-            font-size: 0.82rem; color: #475569; line-height: 1.5;
+        .sug-param {
+            font-size: .8rem; font-weight: 600; color: var(--ink-2);
+            display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
         }
 
-        .disclaimer {
-            font-size: 0.72rem; color: #94a3b8;
-            background: #f8fafc; border-radius: 8px;
-            padding: 10px 14px; margin-top: 24px;
-            border: 1px solid #e2e8f0;
+        .sug-modo {
+            font-size: .67rem; font-weight: 600;
+            padding: 3px 9px; border-radius: 999px;
+            border: 1px solid transparent;
+        }
+        .sug-modo.ml     { background: rgba(10,132,255,.15); border-color: rgba(10,132,255,.3); color: #8fc6ff; }
+        .sug-modo.regra  { background: rgba(255,255,255,.06); border-color: var(--glass-edge); color: var(--ink-3); }
+
+        .sug-valor {
+            font-size: 1.22rem; font-weight: 700;
+            letter-spacing: -.03em; margin: 5px 0 7px;
+            font-variant-numeric: tabular-nums;
+        }
+        .sug.critico .sug-valor { color: #ff9a93; }
+        .sug.alerta  .sug-valor { color: #ffce7a; }
+        .sug.ok      .sug-valor { color: #7ee89b; }
+        .sug.info    .sug-valor { color: #8fc6ff; }
+
+        .sug-msg { font-size: .845rem; line-height: 1.58; color: var(--ink-2); }
+
+        .nota {
+            display: flex; gap: 11px; align-items: flex-start;
+            padding: 15px 18px; margin-top: 4px;
+            background: rgba(255,255,255,.03);
+            border: 1px solid var(--glass-edge);
+            border-radius: var(--r-sm);
+            font-size: .8rem; line-height: 1.6; color: var(--ink-3);
+        }
+        .nota i { font-size: .95rem; margin-top: 2px; flex-shrink: 0; }
+        .nota strong { color: var(--ink-2); }
+
+        /* ═══ Painéis ═══ */
+        .painel { padding: 22px 24px 24px; border-radius: var(--r-lg); margin-bottom: 18px; opacity: 0; }
+
+        /* ═══ Dados registrados ═══ */
+        .dados-grupo {
+            font-size: .7rem; font-weight: 600; color: var(--ink-3);
+            padding-bottom: 9px; margin: 20px 0 4px;
+            border-bottom: 1px solid var(--glass-edge);
+        }
+        .dados-grupo:first-of-type { margin-top: 0; }
+
+        .dado {
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 14px; padding: 10px 0;
+            border-bottom: 1px solid rgba(255,255,255,.045);
+            font-size: .85rem;
+        }
+        .dado:last-child { border-bottom: none; }
+        .dado span { color: var(--ink-2); }
+        .dado strong {
+            font-weight: 700; font-variant-numeric: tabular-nums;
+            white-space: nowrap;
         }
 
-        /* ── Resumo da leitura ── */
-        .resumo-card {
-            background: #fff;
-            border-radius: 12px;
-            padding: 18px 20px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-            margin-bottom: 24px;
+        .tag {
+            font-size: .72rem; padding: 4px 11px;
+            border-radius: 999px; font-weight: 600;
+            border: 1px solid transparent;
         }
-        .resumo-title {
-            font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
-            letter-spacing: 0.06em; color: #94a3b8; margin-bottom: 12px;
-        }
-        .resumo-item {
-            display: flex; justify-content: space-between;
-            font-size: 0.82rem; padding: 6px 0;
-            border-bottom: 1px solid #f1f5f9;
-            color: #334155;
-        }
-        .resumo-item:last-child { border-bottom: none; }
-        .resumo-item span:first-child { color: #64748b; }
-        .resumo-item strong { color: #0f172a; }
+        .tag-ok  { background: rgba(48,209,88,.14); border-color: rgba(48,209,88,.28); color: #7ee89b; }
+        .tag-bad { background: rgba(255,69,58,.14); border-color: rgba(255,69,58,.3);  color: #ff9a93; }
 
-        @media (max-width: 768px) {
-            .sidebar { width: 100%; height: auto; position: relative; }
-            .main-content { margin-left: 0; padding: 16px; }
+        /* ═══ Formulário de feedback ═══ */
+        .fb-label {
+            display: block; font-size: .8rem; font-weight: 600;
+            color: var(--ink-2); margin-bottom: 9px;
         }
+        .fb-label span { color: var(--ink-3); font-weight: 400; }
+
+        .escolhas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 11px; }
+
+        .escolhas input { position: absolute; opacity: 0; pointer-events: none; }
+
+        .escolhas label {
+            display: flex; align-items: center; gap: 11px;
+            padding: 13px 15px; min-height: 44px; margin: 0;
+            background: rgba(255,255,255,.04);
+            border: 1px solid var(--glass-edge);
+            border-radius: var(--r-sm);
+            font-size: .85rem; font-weight: 600; cursor: pointer;
+            transition: border-color .22s var(--ease-out), background .22s var(--ease-out);
+        }
+        .escolhas label:hover { border-color: rgba(255,255,255,.18); }
+
+        .escolhas-mark {
+            width: 20px; height: 20px; border-radius: 50%;
+            border: 1.5px solid var(--glass-edge);
+            display: flex; align-items: center; justify-content: center;
+            font-size: .66rem; color: transparent; flex-shrink: 0;
+            transition: all .22s var(--ease-out);
+        }
+        .escolhas input:checked + label { background: rgba(64,200,224,.1); border-color: rgba(64,200,224,.42); }
+        .escolhas input:checked + label .escolhas-mark { background: var(--teal); border-color: var(--teal); color: #06202a; }
+        .escolhas input:focus-visible + label { outline: 2px solid var(--teal); outline-offset: 3px; }
+
+        .campo-caixa { position: relative; max-width: 240px; }
+
+        .painel input[type="text"], .painel textarea {
+            width: 100%;
+            background: rgba(255,255,255,.04);
+            border: 1px solid var(--glass-edge);
+            border-radius: var(--r-sm);
+            color: var(--ink);
+            font-size: .9rem; font-weight: 600;
+            font-variant-numeric: tabular-nums;
+            transition: border-color .22s var(--ease-out), background .22s var(--ease-out);
+        }
+        .painel input[type="text"] { height: 46px; padding: 0 56px 0 14px; }
+        .painel textarea {
+            padding: 12px 14px; resize: vertical; min-height: 84px;
+            font-weight: 500; line-height: 1.55;
+        }
+        .painel input::placeholder, .painel textarea::placeholder { color: var(--ink-3); font-weight: 400; opacity: .7; }
+        .painel input:focus, .painel textarea:focus {
+            outline: none; border-color: var(--teal);
+            background: rgba(64,200,224,.07);
+            box-shadow: 0 0 0 3px rgba(64,200,224,.16);
+        }
+
+        .campo-unidade {
+            position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+            font-size: .76rem; font-weight: 600; color: var(--ink-3); pointer-events: none;
+        }
+
+        /* ═══ Botões ═══ */
+        .btn-s {
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+            padding: 12px 22px; min-height: 46px;
+            border-radius: 999px;
+            font-size: .875rem; font-weight: 600;
+            text-decoration: none; cursor: pointer;
+            border: 1px solid var(--glass-edge);
+            background: var(--glass-2); color: var(--ink);
+            transition: background .22s var(--ease-out), border-color .22s var(--ease-out);
+        }
+        .btn-s:hover { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.18); color: var(--ink); }
+        .btn-s-fill { background: var(--blue); border-color: var(--blue); color: #fff; }
+        .btn-s-fill:hover { background: #2a96ff; border-color: #2a96ff; color: #fff; }
+
+        .feito {
+            display: flex; gap: 11px; align-items: flex-start;
+            padding: 16px 19px;
+            background: rgba(48,209,88,.1);
+            border: 1px solid rgba(48,209,88,.28);
+            border-radius: var(--r-sm);
+            font-size: .85rem; line-height: 1.55; color: #7ee89b;
+        }
+        .feito i { font-size: 1rem; margin-top: 2px; flex-shrink: 0; }
+        .feito-obs { color: var(--ink-2); margin-top: 6px; font-size: .82rem; }
+
+        a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible {
+            outline: 2px solid var(--teal); outline-offset: 3px;
+        }
+
+        /* ═══ Responsivo ═══ */
+        @media (max-width: 992px) {
+            .sidebar {
+                position: relative; width: 100%; height: auto;
+                flex-direction: row; align-items: center;
+                border-right: none; border-bottom: 1px solid var(--glass-edge);
+                overflow-x: auto;
+            }
+            .nav-stack { display: flex; gap: 5px; padding: 12px; flex: 0 1 auto; }
+            .nav-group, .nav-foot { display: none; }
+            .nav-link-s { margin-bottom: 0; white-space: nowrap; }
+            .brand { border-bottom: none; padding: 14px 18px; }
+            .shell { margin-left: 0; padding: 20px 18px 48px; }
+        }
+
+        @media (max-width: 575px) {
+            .shell { padding: 16px 14px 40px; }
+            .veredito { padding: 24px 20px; }
+            .painel { padding: 20px 18px; }
+            .escolhas { grid-template-columns: 1fr; }
+            .campo-caixa { max-width: none; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            * { animation-duration: .001ms !important; animation-iteration-count: 1 !important; }
+        }
+
+        .js .veredito, .js .painel, .js .sug { opacity: 0; }
     </style>
 </head>
 <body>
 
+<div class="aurora" aria-hidden="true">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+</div>
+
 <!-- ═══ SIDEBAR ═══ -->
 <aside class="sidebar">
-    <div class="sidebar-brand" style="padding:14px 16px; display:flex; align-items:center; gap:12px; border-bottom:1px solid rgba(255,255,255,0.08);">
-        <img src="{% static 'img/Logo.png' %}" alt="SIGUÁ" style="width:54px; height:auto; flex-shrink:0;">
-        <div>
-            <div style="color:#e2e8f0; font-size:0.68rem; line-height:1.4;">ETA Júlio Campos<br>DAE Várzea Grande/MT</div>
-        </div>
+    <div class="brand">
+        <img src="{% static 'img/Logo.png' %}" alt="SIGUÁ">
+        <div class="brand-unit">ETA Júlio Campos<br>DAE Várzea Grande</div>
     </div>
-    <nav class="sidebar-nav">
-        <div class="sidebar-label">Principal</div>
-        <a href="{% url 'dashboard' %}" class="nav-item-link">
-            <i class="bi bi-speedometer2"></i> Dashboard
+
+    <nav class="nav-stack">
+        <div class="nav-group">Principal</div>
+        <a href="{% url 'dashboard' %}" class="nav-link-s">
+            <i class="bi bi-grid-1x2" aria-hidden="true"></i> Dashboard
         </a>
-        <a href="{% url 'nova_leitura' %}" class="nav-item-link active">
-            <i class="bi bi-plus-circle"></i> Nova Leitura
+        <a href="{% url 'nova_leitura' %}" class="nav-link-s">
+            <i class="bi bi-plus-circle" aria-hidden="true"></i> Nova leitura
         </a>
-        <a href="#" class="nav-item-link">
-            <i class="bi bi-file-earmark-bar-graph"></i> Relatório
+        <a href="{% url 'relatorio' %}" class="nav-link-s">
+            <i class="bi bi-file-earmark-text" aria-hidden="true"></i> Relatório
         </a>
-        <div class="sidebar-label">Sistema</div>
-        <a href="#" class="nav-item-link">
-            <i class="bi bi-sliders"></i> Configurações
+
+        <div class="nav-group">Sistema</div>
+        <a href="{% url 'configuracoes' %}" class="nav-link-s">
+            <i class="bi bi-sliders2" aria-hidden="true"></i> Configurações
         </a>
-        <a href="{% url 'logout' %}" class="nav-item-link">
-            <i class="bi bi-box-arrow-right"></i> Sair
+        <a href="{% url 'logout' %}" class="nav-link-s">
+            <i class="bi bi-box-arrow-right" aria-hidden="true"></i> Sair
         </a>
     </nav>
-    <div class="sidebar-footer">
-        <div style="color:#e2e8f0; font-size:0.78rem; font-weight:600;">
-            <i class="bi bi-person-circle me-1"></i>
-            {{ request.user.get_full_name|default:request.user.username }}
+
+    <div class="nav-foot">
+        <div class="who">
+            <span class="who-badge">{{ request.user.username|slice:":2"|upper }}</span>
+            <div>
+                <div class="who-name">{{ request.user.get_full_name|default:request.user.username }}</div>
+                <div class="who-sub">Operador</div>
+            </div>
         </div>
-        <small>Portaria GM/MS nº 888/2021</small>
     </div>
 </aside>
 
 <!-- ═══ CONTEÚDO ═══ -->
-<main class="main-content">
+<main class="shell">
 
-    <div class="mb-4">
-        <div style="font-size:1.15rem; font-weight:700; color:#0f172a;">Resultado da Leitura</div>
-        <div style="font-size:0.8rem; color:#64748b; margin-top:2px;">
-            Registrada em {{ leitura.horario|date:"d/m/Y \à\s H:i:s" }}
-            {% if leitura.operador %} · {{ leitura.operador }}{% endif %}
-            {% if leitura.ponto_coleta %} · {{ leitura.get_ponto_coleta_display|default:leitura.ponto_coleta }}{% endif %}
-        </div>
-    </div>
+    <a href="{% url 'dashboard' %}" class="crumb">
+        <i class="bi bi-arrow-left" aria-hidden="true"></i> Voltar ao dashboard
+    </a>
 
-    <!-- Banner evento crítico -->
-    {% if tem_critico %}
-    <div class="banner-critico">
-        <i class="bi bi-exclamation-triangle-fill"></i>
-        <div>
-            <div class="banner-critico-text">Parâmetros fora do padrão detectados</div>
-            <div class="banner-critico-sub">Verifique as sugestões abaixo e acione o responsável técnico se necessário.</div>
+    <!-- ─── Veredito ─── -->
+    <section class="veredito glass" id="veredito">
+        <div class="selo {% if leitura.status_conformidade %}selo-ok{% else %}selo-bad{% endif %}">
+            <span class="selo-dot"></span>
+            {% if leitura.status_conformidade %}Conforme{% else %}Fora do padrão{% endif %}
         </div>
-    </div>
-    {% endif %}
+
+        <h1 class="veredito-h">
+            {% if leitura.status_conformidade %}
+                Leitura dentro do padrão de potabilidade
+            {% else %}
+                Leitura fora do padrão de potabilidade
+            {% endif %}
+        </h1>
+
+        <p class="veredito-p">
+            {% if tem_critico %}
+                O sistema identificou parâmetros fora do limite nesta coleta. Veja as recomendações
+                ao lado e acione o responsável técnico se for o caso.
+            {% else %}
+                Nenhum parâmetro crítico foi identificado nesta coleta.
+            {% endif %}
+            Avaliada segundo a Portaria GM/MS nº 888/2021.
+        </p>
+
+        <div class="meta-linha">
+            <span class="meta-chip">
+                <i class="bi bi-calendar3" aria-hidden="true"></i>
+                {{ leitura.horario|date:"d/m/Y \à\s H:i" }}
+            </span>
+            {% if leitura.operador %}
+            <span class="meta-chip">
+                <i class="bi bi-person" aria-hidden="true"></i>
+                {{ leitura.operador }}
+            </span>
+            {% endif %}
+            {% if leitura.tipo_reservatorio %}
+            <span class="meta-chip">
+                <i class="bi {% if leitura.tipo_reservatorio == 'metalico' %}bi-database{% else %}bi-bricks{% endif %}" aria-hidden="true"></i>
+                Reservatório {{ leitura.get_tipo_reservatorio_display|lower }}
+            </span>
+            {% endif %}
+            <span class="meta-chip">
+                <i class="bi bi-hash" aria-hidden="true"></i>
+                Leitura {{ leitura.pk }}
+            </span>
+        </div>
+    </section>
 
     <div class="row g-4">
-        <!-- Sugestões -->
+        <!-- ─── Sugestões ─── -->
         <div class="col-lg-7">
-            <div style="font-size:0.8rem; font-weight:600; color:#334155; margin-bottom:12px;">
-                <i class="bi bi-lightbulb me-1 text-warning"></i> Sugestões de Tratamento
-            </div>
-            <div class="d-flex flex-column gap-3">
-                {% for s in sugestoes %}
-                <div class="sugestao-card {{ s.status }}">
-                    <div class="sugestao-icon {{ s.status }}">
-                        {% if s.tipo == 'anomalia' %}
-                            <i class="bi bi-graph-up-arrow"></i>
-                        {% elif s.status == 'ok' %}
-                            <i class="bi bi-check-lg"></i>
-                        {% elif s.status == 'alerta' %}
-                            <i class="bi bi-exclamation"></i>
-                        {% elif s.status == 'info' %}
-                            <i class="bi bi-robot"></i>
-                        {% else %}
-                            <i class="bi bi-x-lg"></i>
+            <h2 class="sec-h"><i class="bi bi-lightbulb" aria-hidden="true"></i> Sugestões de tratamento</h2>
+
+            {% for s in sugestoes %}
+            <article class="sug {{ s.status }}">
+                <span class="sug-ico">
+                    {% if s.tipo == 'anomalia' %}
+                        <i class="bi bi-graph-up-arrow" aria-hidden="true"></i>
+                    {% elif s.status == 'ok' %}
+                        <i class="bi bi-check-lg" aria-hidden="true"></i>
+                    {% elif s.status == 'alerta' %}
+                        <i class="bi bi-exclamation-lg" aria-hidden="true"></i>
+                    {% elif s.status == 'info' %}
+                        <i class="bi bi-cpu" aria-hidden="true"></i>
+                    {% else %}
+                        <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+                    {% endif %}
+                </span>
+                <div style="flex:1; min-width:0;">
+                    <div class="sug-param">
+                        {{ s.parametro }}
+                        {% if s.modo_label %}
+                            <span class="sug-modo {% if s.modo == 'ml' %}ml{% else %}regra{% endif %}">{{ s.modo_label }}</span>
                         {% endif %}
                     </div>
-                    <div style="flex:1;">
-                        <div class="sugestao-parametro">
-                            {{ s.parametro }}
-                            {% if s.modo_label %}
-                            <span style="margin-left:6px; font-size:0.65rem; background:{% if s.modo == 'ml' %}#dbeafe{% else %}#f3f4f6{% endif %}; color:{% if s.modo == 'ml' %}#1d4ed8{% else %}#6b7280{% endif %}; padding:2px 7px; border-radius:999px; font-weight:600; text-transform:none; letter-spacing:0;">{{ s.modo_label }}</span>
-                            {% endif %}
-                        </div>
-                        <div class="sugestao-valor {{ s.status }}">{{ s.valor }}</div>
-                        <div class="sugestao-mensagem">{{ s.mensagem }}</div>
-                    </div>
+                    <div class="sug-valor">{{ s.valor }}</div>
+                    <div class="sug-msg">{{ s.mensagem }}</div>
                 </div>
-                {% endfor %}
+            </article>
+            {% empty %}
+            <div class="painel glass">
+                <div style="color:var(--ink-2); font-weight:600; margin-bottom:6px;">Nenhuma sugestão para esta leitura</div>
+                <div style="color:var(--ink-3); font-size:.82rem;">Registre as medições para o sistema avaliar os parâmetros.</div>
+            </div>
+            {% endfor %}
+
+            <div class="nota">
+                <i class="bi bi-info-circle" aria-hidden="true"></i>
+                <span>
+                    As sugestões acima são recomendações de apoio à decisão, geradas automaticamente com base
+                    na Portaria GM/MS nº 888/2021. <strong>A decisão final é sempre do operador responsável.</strong>
+                </span>
             </div>
 
-            <div class="disclaimer">
-                <i class="bi bi-info-circle me-1"></i>
-                As sugestões acima são recomendações de apoio à decisão operacional geradas automaticamente com base na
-                Portaria GM/MS nº 888/2021. <strong>A decisão final é sempre do operador responsável.</strong>
-            </div>
+            <!-- Feedback -->
+            {% if leitura.sugestao_aceita is None %}
+            <section class="painel glass" style="margin-top:18px;">
+                <h2 class="sec-h"><i class="bi bi-pencil-square" aria-hidden="true"></i> O que você fez após essa leitura?</h2>
 
-            <!-- Formulário de feedback -->
-            {% if not leitura.sugestao_aceita is not None %}
-            <div style="background:#fff; border-radius:10px; padding:18px 20px; box-shadow:0 1px 3px rgba(0,0,0,0.06); margin-top:20px;">
-                <div style="font-size:0.8rem; font-weight:600; color:#334155; margin-bottom:14px;">
-                    <i class="bi bi-pencil-square me-1 text-primary"></i> O que você fez após essa leitura?
-                </div>
                 <form method="post" action="{% url 'registrar_feedback' leitura.pk %}">
                     {% csrf_token %}
 
-                    <div class="mb-3">
-                        <label style="font-size:0.78rem; font-weight:600; color:#475569; display:block; margin-bottom:6px;">
-                            Você seguiu a sugestão do sistema?
-                        </label>
-                        <div class="d-flex gap-2">
-                            <label style="cursor:pointer; display:flex; align-items:center; gap:6px; font-size:0.82rem; color:#334155;">
-                                <input type="radio" name="sugestao_aceita" value="sim"> Sim, segui a recomendação
-                            </label>
-                            <label style="cursor:pointer; display:flex; align-items:center; gap:6px; font-size:0.82rem; color:#334155; margin-left:12px;">
-                                <input type="radio" name="sugestao_aceita" value="nao"> Não segui
-                            </label>
+                    <div style="margin-bottom:20px;">
+                        <span class="fb-label">Você seguiu a sugestão do sistema?</span>
+                        <div class="escolhas">
+                            <div style="position:relative;">
+                                <input type="radio" name="sugestao_aceita" value="sim" id="fb_sim" required>
+                                <label for="fb_sim">
+                                    <span class="escolhas-mark" aria-hidden="true"><i class="bi bi-check-lg"></i></span>
+                                    Sim, segui a recomendação
+                                </label>
+                            </div>
+                            <div style="position:relative;">
+                                <input type="radio" name="sugestao_aceita" value="nao" id="fb_nao" required>
+                                <label for="fb_nao">
+                                    <span class="escolhas-mark" aria-hidden="true"><i class="bi bi-check-lg"></i></span>
+                                    Não segui
+                                </label>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="mb-3">
-                        <label style="font-size:0.78rem; font-weight:600; color:#475569; display:block; margin-bottom:6px;">
-                            Dosagem de coagulante aplicada (mg/L) <span style="color:#94a3b8; font-weight:400;">— opcional</span>
+                    <div style="margin-bottom:20px;">
+                        <label class="fb-label" for="dosagem_aplicada_mgl">
+                            Dosagem de coagulante aplicada <span>— opcional</span>
                         </label>
-                        <input type="number" name="dosagem_aplicada_mgl" step="0.1" min="0"
-                               placeholder="Ex: 35.5"
-                               style="width:180px; padding:7px 10px; border:1px solid #e2e8f0; border-radius:7px; font-size:0.82rem; color:#334155;">
-                        <span style="font-size:0.75rem; color:#94a3b8; margin-left:8px;">mg/L</span>
+                        <div class="campo-caixa">
+                            <input type="text" inputmode="decimal" id="dosagem_aplicada_mgl"
+                                   name="dosagem_aplicada_mgl" placeholder="35,5">
+                            <span class="campo-unidade">mg/L</span>
+                        </div>
                     </div>
 
-                    <div class="mb-3">
-                        <label style="font-size:0.78rem; font-weight:600; color:#475569; display:block; margin-bottom:6px;">
-                            Observação <span style="color:#94a3b8; font-weight:400;">— opcional</span>
+                    <div style="margin-bottom:22px;">
+                        <label class="fb-label" for="observacao_operador">
+                            Observação <span>— opcional</span>
                         </label>
-                        <textarea name="observacao_operador" rows="2"
-                                  placeholder="Ex: Aumentei a dosagem pois a turbidez ainda estava elevada..."
-                                  style="width:100%; padding:8px 10px; border:1px solid #e2e8f0; border-radius:7px; font-size:0.82rem; color:#334155; resize:vertical;"></textarea>
+                        <textarea id="observacao_operador" name="observacao_operador" rows="3"
+                                  placeholder="Ex.: aumentei a dosagem porque a turbidez seguia elevada."></textarea>
                     </div>
 
-                    <button type="submit"
-                            style="background:#0f2744; color:#fff; border:none; border-radius:8px; padding:9px 20px; font-size:0.82rem; font-weight:600; cursor:pointer;">
-                        <i class="bi bi-send me-1"></i> Registrar feedback
+                    <button type="submit" class="btn-s btn-s-fill">
+                        <i class="bi bi-send" aria-hidden="true"></i> Registrar feedback
                     </button>
                 </form>
-            </div>
+            </section>
             {% else %}
-            <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:10px; padding:14px 18px; margin-top:20px; font-size:0.82rem; color:#15803d;">
-                <i class="bi bi-check-circle me-1"></i> Feedback registrado.
-                {% if leitura.dosagem_aplicada_mgl %}
-                    Dosagem aplicada: <strong>{{ leitura.dosagem_aplicada_mgl }} mg/L</strong>.
-                {% endif %}
-            </div>
-            {% endif %}
-
-        </div>
-
-        <!-- Resumo da leitura -->
-        <div class="col-lg-5">
-            <div style="font-size:0.8rem; font-weight:600; color:#334155; margin-bottom:12px;">
-                <i class="bi bi-clipboard-data me-1 text-primary"></i> Dados Registrados
-            </div>
-            <div class="resumo-card">
-                <div class="resumo-title">Parâmetros</div>
-
-                <div class="resumo-item">
-                    <span>Turbidez</span>
-                    <strong>{{ leitura.turbidez_ntu|floatformat:2 }} NTU</strong>
-                </div>
-                <div class="resumo-item">
-                    <span>Vazão</span>
-                    <strong>{{ leitura.vazao_ls|floatformat:1 }} L/s</strong>
-                </div>
-                <div class="resumo-item">
-                    <span>Nível</span>
-                    <strong>{{ leitura.nivel_cm|floatformat:0 }} cm</strong>
-                </div>
-                {% if leitura.ph is not None %}
-                <div class="resumo-item">
-                    <span>pH</span>
-                    <strong>{{ leitura.ph|floatformat:2 }}</strong>
-                </div>
-                {% endif %}
-                {% if leitura.cloro_residual_mgl is not None %}
-                <div class="resumo-item">
-                    <span>Cloro Residual</span>
-                    <strong>{{ leitura.cloro_residual_mgl|floatformat:2 }} mg/L</strong>
-                </div>
-                {% endif %}
-                {% if leitura.cor_uh is not None %}
-                <div class="resumo-item">
-                    <span>Cor Aparente</span>
-                    <strong>{{ leitura.cor_uh|floatformat:1 }} uH</strong>
-                </div>
-                {% endif %}
-                {% if leitura.coliformes_ufc is not None %}
-                <div class="resumo-item">
-                    <span>Coliformes Totais</span>
-                    <strong>{{ leitura.coliformes_ufc|floatformat:0 }} UFC/100mL</strong>
-                </div>
-                {% endif %}
-
-                <div class="resumo-title mt-3">Conformidade</div>
-                <div class="resumo-item">
-                    <span>Status Portaria 888</span>
-                    {% if leitura.status_conformidade %}
-                        <span style="background:#dcfce7; color:#15803d; font-size:0.72rem; padding:3px 10px; border-radius:999px; font-weight:600;">Conforme</span>
-                    {% else %}
-                        <span style="background:#fee2e2; color:#b91c1c; font-size:0.72rem; padding:3px 10px; border-radius:999px; font-weight:600;">Não conforme</span>
+            <div class="feito" style="margin-top:18px;">
+                <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
+                <div>
+                    Feedback registrado.
+                    {% if leitura.sugestao_aceita %}O operador seguiu a recomendação.{% else %}O operador não seguiu a recomendação.{% endif %}
+                    {% if leitura.dosagem_aplicada_mgl %}
+                        Dosagem aplicada de {{ leitura.dosagem_aplicada_mgl|floatformat:1 }} mg/L.
+                    {% endif %}
+                    {% if leitura.observacao_operador %}
+                        <div class="feito-obs">“{{ leitura.observacao_operador }}”</div>
                     {% endif %}
                 </div>
             </div>
+            {% endif %}
+        </div>
 
-            <div class="d-flex gap-2">
-                <a href="{% url 'dashboard' %}" class="btn btn-sm"
-                   style="background:#0f2744; color:#fff; border-radius:8px; font-size:0.82rem; font-weight:600; padding:9px 18px;">
-                    <i class="bi bi-speedometer2 me-1"></i> Ir ao Dashboard
+        <!-- ─── Dados registrados ─── -->
+        <div class="col-lg-5">
+            <h2 class="sec-h"><i class="bi bi-clipboard-data" aria-hidden="true"></i> Dados registrados</h2>
+
+            <section class="painel glass">
+                <div class="dados-grupo">Água tratada</div>
+                {% if leitura.cor_uh is not None %}
+                    <div class="dado"><span>Cor aparente</span><strong>{{ leitura.cor_uh|floatformat:1 }} uH</strong></div>
+                {% endif %}
+                {% if leitura.turbidez_ntu is not None %}
+                    <div class="dado"><span>Turbidez</span><strong>{{ leitura.turbidez_ntu|floatformat:2 }} NTU</strong></div>
+                {% endif %}
+                {% if leitura.cloro_residual_mgl is not None %}
+                    <div class="dado"><span>Cloro residual</span><strong>{{ leitura.cloro_residual_mgl|floatformat:2 }} mg/L</strong></div>
+                {% endif %}
+                {% if leitura.ph is not None %}
+                    <div class="dado"><span>pH</span><strong>{{ leitura.ph|floatformat:2 }}</strong></div>
+                {% endif %}
+                {% if leitura.coliformes_ufc is not None %}
+                    <div class="dado"><span>Coliformes totais</span><strong>{{ leitura.coliformes_ufc|floatformat:0 }} UFC/100mL</strong></div>
+                {% endif %}
+                {% if leitura.alcalinidade_tratada is not None %}
+                    <div class="dado"><span>Alcalinidade</span><strong>{{ leitura.alcalinidade_tratada|floatformat:1 }} mg/L</strong></div>
+                {% endif %}
+
+                {% if leitura.turbidez_bruta_ntu is not None or leitura.cor_bruta_uh is not None or leitura.ph_bruto is not None or leitura.alcalinidade_bruta is not None %}
+                    <div class="dados-grupo">Água bruta</div>
+                    {% if leitura.turbidez_bruta_ntu is not None %}
+                        <div class="dado"><span>Turbidez bruta</span><strong>{{ leitura.turbidez_bruta_ntu|floatformat:1 }} NTU</strong></div>
+                    {% endif %}
+                    {% if leitura.cor_bruta_uh is not None %}
+                        <div class="dado"><span>Cor bruta</span><strong>{{ leitura.cor_bruta_uh|floatformat:1 }} uH</strong></div>
+                    {% endif %}
+                    {% if leitura.ph_bruto is not None %}
+                        <div class="dado"><span>pH bruto</span><strong>{{ leitura.ph_bruto|floatformat:2 }}</strong></div>
+                    {% endif %}
+                    {% if leitura.alcalinidade_bruta is not None %}
+                        <div class="dado"><span>Alcalinidade bruta</span><strong>{{ leitura.alcalinidade_bruta|floatformat:1 }} mg/L</strong></div>
+                    {% endif %}
+                {% endif %}
+
+                {% if leitura.vazao_ls is not None %}
+                    <div class="dados-grupo">Vazão</div>
+                    <div class="dado"><span>Vazão tratada</span><strong>{{ leitura.vazao_ls|floatformat:1 }} L/s</strong></div>
+                {% endif %}
+
+                {% if leitura.sulfato_aluminio_kg is not None or leitura.policloreto_aluminio_l is not None or leitura.hipoclorito_sodio_kg is not None %}
+                    <div class="dados-grupo">Dosagens aplicadas</div>
+                    {% if leitura.sulfato_aluminio_kg is not None %}
+                        <div class="dado"><span>Sulfato de alumínio</span><strong>{{ leitura.sulfato_aluminio_kg|floatformat:1 }} kg</strong></div>
+                    {% endif %}
+                    {% if leitura.policloreto_aluminio_l is not None %}
+                        <div class="dado"><span>Policloreto de alumínio</span><strong>{{ leitura.policloreto_aluminio_l|floatformat:1 }} L</strong></div>
+                    {% endif %}
+                    {% if leitura.hipoclorito_sodio_kg is not None %}
+                        <div class="dado"><span>Hipoclorito de sódio</span><strong>{{ leitura.hipoclorito_sodio_kg|floatformat:1 }} kg</strong></div>
+                    {% endif %}
+                {% endif %}
+
+                <div class="dados-grupo">Conformidade</div>
+                <div class="dado">
+                    <span>Portaria 888/2021</span>
+                    {% if leitura.status_conformidade %}
+                        <span class="tag tag-ok">Conforme</span>
+                    {% else %}
+                        <span class="tag tag-bad">Não conforme</span>
+                    {% endif %}
+                </div>
+            </section>
+
+            <div class="d-flex gap-2 flex-wrap">
+                <a href="{% url 'dashboard' %}" class="btn-s btn-s-fill" style="flex:1 1 auto;">
+                    <i class="bi bi-grid-1x2" aria-hidden="true"></i> Ir ao dashboard
                 </a>
-                <a href="{% url 'nova_leitura' %}" class="btn btn-sm"
-                   style="background:#f1f5f9; color:#475569; border-radius:8px; font-size:0.82rem; font-weight:500; padding:9px 16px;">
-                    Nova Leitura
+                <a href="{% url 'nova_leitura' %}" class="btn-s" style="flex:1 1 auto;">
+                    <i class="bi bi-plus-lg" aria-hidden="true"></i> Nova leitura
                 </a>
             </div>
         </div>
@@ -356,6 +719,39 @@
 
 </main>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+(function () {
+    "use strict";
+
+    var CALMO = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    var ANIMAR = !CALMO && typeof gsap !== 'undefined';
+
+    function revelarTudo() {
+        document.querySelectorAll('.veredito, .painel, .sug').forEach(function (el) {
+            el.style.opacity = '1';
+            el.style.transform = 'none';
+        });
+        document.querySelectorAll('.blob').forEach(function (b) { b.style.opacity = '.55'; });
+    }
+
+    if (!ANIMAR) {
+        revelarTudo();
+    } else {
+        gsap.to('.blob', { opacity: .6, duration: 1.5, stagger: .18, ease: 'power1.out' });
+        gsap.timeline({ defaults: { ease: 'power2.out' } })
+            .fromTo('#veredito', { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: .62 })
+            .fromTo('.sug', { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: .46, stagger: .07 }, '-=0.32')
+            .fromTo('.painel', { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: .46, stagger: .08 }, '-=0.38');
+    }
+
+    // Aceita vírgula como separador decimal, como o operador escreve.
+    document.querySelectorAll('input[inputmode="decimal"]').forEach(function (campo) {
+        campo.addEventListener('input', function () {
+            var limpo = campo.value.replace(/[^0-9.,-]/g, '');
+            if (limpo !== campo.value) { campo.value = limpo; }
+        });
+    });
+})();
+</script>
 </body>
 </html>

@@ -1,9 +1,18 @@
-django
-djangorestframework
-psycopg2-binary
-python-dotenv
-numpy
-pandas
-scikit-learn
-matplotlib
-plotly
+# ── Aplicação ──
+Django==6.1.1
+djangorestframework==3.18.1
+psycopg2-binary==2.9.13
+python-dotenv==1.2.3
+dj-database-url==3.1.2
+
+# ── Servir em produção ──
+gunicorn==26.2.0        # Linux e nuvem
+waitress==3.0.2         # Windows
+whitenoise==6.12.0      # arquivos estáticos
+
+# ── Gráficos e aprendizado de máquina ──
+numpy==2.5.3
+pandas==3.0.5
+scikit-learn==1.9.1
+matplotlib==3.11.1
+plotly==7.0.0

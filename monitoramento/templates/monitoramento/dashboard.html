@@ -5,566 +5,1898 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SIGUÁ — Dashboard</title>
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
     <script src="https://cdn.plot.ly/plotly-2.24.1.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+
+    <!-- Só esconde o conteúdo para animar se houver JS: sem isso, uma falha de
+         CDN ou JS desligado deixaria a página em branco. -->
+    <script>document.documentElement.className += ' js';</script>
 
     <style>
-        *, body { font-family: 'Inter', sans-serif; }
+        :root {
+            /* Campo e vidro */
+            --field:      #080b12;
+            --glass:      rgba(255, 255, 255, .055);
+            --glass-2:    rgba(255, 255, 255, .035);
+            --glass-edge: rgba(255, 255, 255, .085);
+            --glass-top:  rgba(255, 255, 255, .14);
 
-        body {
-            background-color: #f1f5f9;
-            overflow-x: hidden;
+            /* Tinta */
+            --ink:    #f5f7fa;
+            --ink-2:  #9aa6b8;
+            --ink-3:  #7886a0;
+
+            /* Cores de sistema (dark) */
+            --teal:   #40c8e0;   /* vazão — água */
+            --orange: #ff9f0a;   /* turbidez — sedimento */
+            --green:  #30d158;   /* conforme */
+            --red:    #ff453a;   /* fora do padrão */
+            --blue:   #0a84ff;   /* ação */
+
+            --r-lg: 26px;
+            --r-md: 20px;
+            --r-sm: 14px;
+
+            --sidebar-w: 248px;
+
+            --ease-out: cubic-bezier(.22, 1, .36, 1);
         }
 
-        /* ── Sidebar ── */
+        * { font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif; }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            background: var(--field);
+            color: var(--ink);
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            letter-spacing: -.011em;
+        }
+
+        /* ═══ Aurora de fundo — dá ao vidro algo para desfocar ═══ */
+        .aurora {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .blob {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(100px);
+            opacity: 0;
+            will-change: transform, opacity;
+        }
+
+        .blob-1 {
+            width: 620px; height: 620px;
+            top: -210px; left: -130px;
+            background: radial-gradient(circle, rgba(64,200,224,.42), transparent 68%);
+        }
+
+        .blob-2 {
+            width: 560px; height: 560px;
+            top: 18%; right: -170px;
+            background: radial-gradient(circle, rgba(10,132,255,.34), transparent 68%);
+        }
+
+        .blob-3 {
+            width: 500px; height: 500px;
+            bottom: -190px; left: 34%;
+            background: radial-gradient(circle, rgba(94,92,230,.3), transparent 68%);
+        }
+
+        /* ═══ Vidro ═══ */
+        .glass {
+            position: relative;
+            background: var(--glass);
+            border: 1px solid var(--glass-edge);
+            border-radius: var(--r-md);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+        }
+
+        /* reflexo superior de 1px — detalhe de vidro real */
+        .glass::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 14px; right: 14px;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--glass-top), transparent);
+            pointer-events: none;
+        }
+
+        /* ═══ Sidebar ═══ */
         .sidebar {
             position: fixed;
             top: 0; left: 0;
-            width: 220px;
+            width: var(--sidebar-w);
             height: 100vh;
-            background: #0f2744;
+            z-index: 50;
             display: flex;
             flex-direction: column;
-            padding: 0;
-            z-index: 100;
+            background: rgba(255, 255, 255, .03);
+            border-right: 1px solid var(--glass-edge);
+            backdrop-filter: blur(24px) saturate(180%);
+            -webkit-backdrop-filter: blur(24px) saturate(180%);
         }
 
-        .sidebar-brand {
-            padding: 20px 20px 16px;
-            border-bottom: 1px solid rgba(255,255,255,0.08);
-        }
-
-        .sidebar-brand .brand-name {
-            color: #fff;
-            font-size: 1.1rem;
-            font-weight: 700;
-            letter-spacing: 0.05em;
-        }
-
-        .sidebar-brand .brand-sub {
-            color: #94a3b8;
-            font-size: 0.7rem;
-            line-height: 1.3;
-            margin-top: 2px;
-        }
-
-        .sidebar-nav {
-            padding: 16px 12px;
-            flex: 1;
-        }
-
-        .sidebar-label {
-            color: #475569;
-            font-size: 0.65rem;
-            font-weight: 600;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            padding: 0 8px;
-            margin-bottom: 6px;
-            margin-top: 12px;
-        }
-
-        .nav-item-link {
+        .brand {
+            padding: 22px 22px 20px;
             display: flex;
             align-items: center;
-            gap: 10px;
-            padding: 9px 12px;
-            border-radius: 8px;
-            color: #94a3b8;
-            text-decoration: none;
-            font-size: 0.85rem;
+            gap: 13px;
+            border-bottom: 1px solid var(--glass-edge);
+        }
+
+        .brand img { width: 46px; height: auto; flex-shrink: 0; }
+
+        .brand-unit {
+            font-size: .7rem;
+            line-height: 1.5;
+            color: var(--ink-2);
             font-weight: 500;
-            transition: background 0.15s, color 0.15s;
-            margin-bottom: 2px;
         }
 
-        .nav-item-link:hover { background: rgba(255,255,255,0.06); color: #e2e8f0; }
-        .nav-item-link.active { background: rgba(37,99,235,0.25); color: #93c5fd; }
-        .nav-item-link i { font-size: 1rem; width: 18px; text-align: center; }
+        .nav-stack { padding: 20px 14px; flex: 1; }
 
-        .sidebar-footer {
-            padding: 16px;
-            border-top: 1px solid rgba(255,255,255,0.08);
+        .nav-group {
+            font-size: .68rem;
+            font-weight: 600;
+            color: var(--ink-3);
+            padding: 0 12px;
+            margin: 20px 0 8px;
+        }
+        .nav-group:first-child { margin-top: 0; }
+
+        .nav-link-s {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 11px 13px;
+            min-height: 44px;
+            border-radius: var(--r-sm);
+            color: var(--ink-2);
+            text-decoration: none;
+            font-size: .875rem;
+            font-weight: 500;
+            margin-bottom: 3px;
+            cursor: pointer;
+            transition: background .22s var(--ease-out), color .22s var(--ease-out);
         }
 
-        .sidebar-footer small {
-            color: #475569;
-            font-size: 0.7rem;
+        .nav-link-s:hover {
+            background: rgba(255, 255, 255, .06);
+            color: var(--ink);
         }
 
-        /* ── Main ── */
-        .main-content {
-            margin-left: 220px;
-            padding: 28px 28px 40px;
+        .nav-link-s.active {
+            background: rgba(64, 200, 224, .13);
+            border: 1px solid rgba(64, 200, 224, .22);
+            color: #a8ecf7;
+            font-weight: 600;
+        }
+
+        .nav-link-s i { font-size: 1.05rem; width: 19px; text-align: center; }
+
+        .nav-foot {
+            padding: 16px 18px;
+            border-top: 1px solid var(--glass-edge);
+        }
+
+        .who { display: flex; align-items: center; gap: 11px; }
+
+        .who-badge {
+            width: 34px; height: 34px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, rgba(64,200,224,.3), rgba(10,132,255,.3));
+            border: 1px solid var(--glass-edge);
+            display: flex; align-items: center; justify-content: center;
+            font-size: .74rem; font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .who-name { font-size: .82rem; font-weight: 600; }
+        .who-sub  { font-size: .68rem; color: var(--ink-3); }
+
+        /* ═══ Layout ═══ */
+        .shell {
+            position: relative;
+            z-index: 1;
+            margin-left: var(--sidebar-w);
+            padding: 30px 34px 60px;
             min-height: 100vh;
         }
 
-        /* ── Top bar ── */
-        .topbar {
+        /* ═══ Hero ═══ */
+        .hero {
+            padding: 36px 40px;
+            border-radius: var(--r-lg);
             display: flex;
-            align-items: flex-start;
+            align-items: center;
             justify-content: space-between;
-            margin-bottom: 24px;
+            gap: 40px;
+            flex-wrap: wrap;
         }
 
-        .topbar-title {
-            font-size: 1.15rem;
-            font-weight: 700;
-            color: #0f172a;
-        }
+        /* Escondido apenas quando o JS vai revelar com animação. */
+        .js .hero,
+        .js .liquid-card,
+        .js .tile,
+        .js .chart-panel,
+        .js .log-panel { opacity: 0; }
 
-        .topbar-sub {
-            font-size: 0.8rem;
-            color: #64748b;
-            margin-top: 2px;
-        }
-
-        .status-badge {
+        .verdict {
             display: inline-flex;
             align-items: center;
-            gap: 6px;
-            padding: 6px 14px;
+            gap: 9px;
+            padding: 7px 15px 7px 12px;
             border-radius: 999px;
-            font-size: 0.8rem;
+            font-size: .8rem;
             font-weight: 600;
+            margin-bottom: 20px;
         }
 
-        .status-badge.ok    { background: #dcfce7; color: #15803d; }
-        .status-badge.alert { background: #fee2e2; color: #b91c1c; }
-        .status-badge .dot  { width: 7px; height: 7px; border-radius: 50%; }
-        .status-badge.ok    .dot { background: #16a34a; animation: pulse-green 1.8s infinite; }
-        .status-badge.alert .dot { background: #dc2626; animation: pulse-red   1.8s infinite; }
+        .verdict-ok {
+            background: rgba(48, 209, 88, .14);
+            border: 1px solid rgba(48, 209, 88, .3);
+            color: #7ee89b;
+        }
 
-        @keyframes pulse-green { 0%,100% { box-shadow: 0 0 0 0 rgba(22,163,74,0.4); } 50% { box-shadow: 0 0 0 5px rgba(22,163,74,0); } }
-        @keyframes pulse-red   { 0%,100% { box-shadow: 0 0 0 0 rgba(220,38,38,0.4); } 50% { box-shadow: 0 0 0 5px rgba(220,38,38,0); } }
+        .verdict-bad {
+            background: rgba(255, 69, 58, .14);
+            border: 1px solid rgba(255, 69, 58, .32);
+            color: #ff9a93;
+        }
 
-        /* ── KPI Cards ── */
-        .kpi-card {
-            background: #fff;
-            border-radius: 12px;
-            padding: 18px 20px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-            border-left: 4px solid transparent;
+        .verdict-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+        .verdict-ok  .verdict-dot { background: var(--green); }
+        .verdict-bad .verdict-dot { background: var(--red); }
+
+        .hero-h {
+            font-size: clamp(1.7rem, 3.3vw, 2.65rem);
+            font-weight: 700;
+            line-height: 1.12;
+            letter-spacing: -.035em;
+            margin: 0 0 14px;
+            max-width: 19ch;
+        }
+
+        .hero-p {
+            font-size: .93rem;
+            line-height: 1.62;
+            color: var(--ink-2);
+            max-width: 46ch;
+            margin: 0;
+        }
+
+        .hero-acts { display: flex; gap: 11px; flex-wrap: wrap; margin-top: 26px; }
+
+        .btn-s {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 20px;
+            min-height: 44px;
+            border-radius: 999px;
+            font-size: .865rem;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            border: 1px solid var(--glass-edge);
+            background: var(--glass-2);
+            color: var(--ink);
+            transition: background .22s var(--ease-out), border-color .22s var(--ease-out);
+        }
+
+        .btn-s:hover { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.18); color: var(--ink); }
+
+        .btn-s-fill {
+            background: var(--blue);
+            border-color: var(--blue);
+            color: #fff;
+        }
+        .btn-s-fill:hover { background: #2a96ff; border-color: #2a96ff; color: #fff; }
+
+        /* ═══ Parâmetros avaliados ═══ */
+        .hero-text { flex: 1 1 420px; min-width: 0; }
+
+        /* ═══ O indicador: conformidade da leitura ═══ */
+        .ring-wrap {
+            position: relative;
+            width: 236px; height: 236px;
+            flex-shrink: 0;
+        }
+
+        .ring-halo {
+            position: absolute;
+            inset: 12px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(64,200,224,.2), transparent 66%);
+        }
+
+        .ring-wrap.completo .ring-halo { background: radial-gradient(circle, rgba(48,209,88,.24), transparent 66%); }
+
+        .ring-svg { position: relative; display: block; transform: rotate(-90deg); }
+
+        .ring-track { fill: none; stroke: rgba(255,255,255,.07); stroke-width: 13; }
+
+        .ring-arc {
+            fill: none;
+            stroke-width: 13;
+            stroke-linecap: round;
+            stroke: url(#arcGrad);
+        }
+
+        .ring-wrap.completo .ring-arc { stroke: url(#arcGradFeito); }
+
+        .ring-core {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .ring-num {
+            font-size: 3.1rem;
+            font-weight: 700;
+            line-height: 1;
+            letter-spacing: -.045em;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .ring-unit {
+            font-size: .83rem;
+            font-weight: 600;
+            color: var(--teal);
+            margin-top: 5px;
+        }
+
+        .ring-wrap.completo .ring-unit { color: var(--green); }
+
+        .ring-cap {
+            font-size: .7rem;
+            color: var(--ink-3);
+            margin-top: 7px;
+            font-weight: 500;
+        }
+
+        /* ═══ Seções ═══ */
+        .sec-head {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin: 44px 0 16px;
+        }
+
+        .sec-title {
+            font-size: 1.14rem;
+            font-weight: 700;
+            letter-spacing: -.025em;
+        }
+
+        .sec-note { font-size: .8rem; color: var(--ink-3); }
+
+        /* ═══ Cartão líquido (vazão) ═══ */
+        .liquid-card {
+            position: relative;
+            padding: 26px 28px 0;
+            border-radius: var(--r-lg);
+            overflow: hidden;
+            height: 100%;
+            min-height: 272px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .liquid-body { position: relative; z-index: 2; }
+
+        .liquid-label { font-size: .84rem; font-weight: 600; color: var(--ink-2); }
+
+        .liquid-read {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+            margin: 8px 0 4px;
+        }
+
+        .liquid-num {
+            font-size: 3.3rem;
+            font-weight: 700;
+            line-height: 1;
+            letter-spacing: -.045em;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .liquid-unit { font-size: 1rem; font-weight: 600; color: var(--teal); }
+
+        .liquid-cap { font-size: .78rem; color: var(--ink-3); font-weight: 500; }
+
+        /* água */
+        .liquid-fill {
+            position: absolute;
+            left: 0; right: 0; bottom: 0;
+            height: 0;
+            z-index: 1;
+            background: linear-gradient(180deg, rgba(64,200,224,.3), rgba(10,132,255,.17));
+            transition: height 1.5s var(--ease-out);
+        }
+
+        .wave {
+            position: absolute;
+            bottom: 100%;
+            left: 0;
+            width: 220%;
+            height: 26px;
+        }
+
+        .wave path { fill: rgba(64, 200, 224, .32); }
+
+        .wave-back { opacity: .55; }
+        .wave-back path { fill: rgba(10, 132, 255, .3); }
+
+        .liquid-foot {
+            position: relative;
+            z-index: 2;
+            margin-top: auto;
+            padding: 14px 0 18px;
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 14px;
+        }
+
+        .spark { display: block; }
+
+        .foot-stat { text-align: right; }
+        .foot-stat-k { font-size: .68rem; color: var(--ink-3); font-weight: 500; }
+        .foot-stat-v { font-size: .9rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+        /* ═══ Tiles ═══ */
+        .tile {
+            padding: 19px 21px;
+            border-radius: var(--r-md);
             height: 100%;
         }
 
-        .kpi-card.blue   { border-left-color: #2563eb; }
-        .kpi-card.green  { border-left-color: #16a34a; }
-        .kpi-card.orange { border-left-color: #d97706; }
-        .kpi-card.red    { border-left-color: #dc2626; }
-
-        .kpi-label {
-            font-size: 0.72rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-            color: #64748b;
+        .tile-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 13px;
         }
 
-        .kpi-value {
-            font-size: 1.9rem;
-            font-weight: 700;
-            color: #0f172a;
-            line-height: 1.1;
-            margin: 4px 0 2px;
-        }
+        .tile-label { font-size: .8rem; font-weight: 600; color: var(--ink-2); }
 
-        .kpi-unit {
-            font-size: 0.78rem;
-            color: #94a3b8;
-        }
-
-        .kpi-icon {
-            width: 36px; height: 36px;
-            border-radius: 8px;
+        .tile-ico {
+            width: 31px; height: 31px;
+            border-radius: 9px;
             display: flex; align-items: center; justify-content: center;
-            font-size: 1.1rem;
+            font-size: .92rem;
+            flex-shrink: 0;
+            background: rgba(255,255,255,.06);
+            border: 1px solid var(--glass-edge);
         }
 
-        .kpi-icon.blue   { background: #eff6ff; color: #2563eb; }
-        .kpi-icon.green  { background: #f0fdf4; color: #16a34a; }
-        .kpi-icon.orange { background: #fffbeb; color: #d97706; }
-        .kpi-icon.red    { background: #fef2f2; color: #dc2626; }
-
-        /* ── Chart Cards ── */
-        .chart-card {
-            background: #fff;
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+        .tile-num {
+            font-size: 1.82rem;
+            font-weight: 700;
+            line-height: 1;
+            letter-spacing: -.035em;
+            font-variant-numeric: tabular-nums;
         }
 
-        .chart-card-title {
-            font-size: 0.85rem;
+        .tile-cap { font-size: .72rem; color: var(--ink-3); margin-top: 7px; font-weight: 500; }
+
+        .tile-bar {
+            height: 4px;
+            border-radius: 999px;
+            background: rgba(255,255,255,.08);
+            margin-top: 13px;
+            overflow: hidden;
+        }
+
+        .tile-bar span {
+            display: block;
+            height: 100%;
+            width: 0;
+            border-radius: 999px;
+            transition: width 1.3s var(--ease-out);
+        }
+
+        .ok-txt   { color: var(--green); }
+        .bad-txt  { color: var(--red); }
+        .none-txt { color: var(--ink-3); }
+
+        /* ═══ Painel de gráficos ═══ */
+        .chart-panel {
+            padding: 24px 26px 20px;
+            border-radius: var(--r-lg);
+        }
+
+        .panel-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 14px;
+            margin-bottom: 4px;
+        }
+
+        .seg {
+            display: inline-flex;
+            padding: 4px;
+            gap: 3px;
+            background: rgba(255,255,255,.05);
+            border: 1px solid var(--glass-edge);
+            border-radius: 14px;
+        }
+
+        .seg-btn {
+            border: none;
+            background: transparent;
+            color: var(--ink-2);
+            padding: 9px 17px;
+            min-height: 40px;
+            border-radius: 11px;
+            font-size: .845rem;
             font-weight: 600;
-            color: #334155;
-            margin-bottom: 16px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            white-space: nowrap;
+            transition: background .22s var(--ease-out), color .22s var(--ease-out);
         }
 
-        /* ── Table ── */
-        .table-card {
-            background: #fff;
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+        .seg-btn:hover { color: var(--ink); }
+
+        .seg-btn.active {
+            background: rgba(255,255,255,.1);
+            color: var(--ink);
+            box-shadow: 0 1px 0 rgba(255,255,255,.07) inset;
         }
+
+        .mini {
+            display: inline-flex;
+            padding: 3px;
+            gap: 2px;
+            background: rgba(255,255,255,.04);
+            border: 1px solid var(--glass-edge);
+            border-radius: 12px;
+        }
+
+        .mini-btn {
+            border: none;
+            background: transparent;
+            color: var(--ink-3);
+            padding: 7px 13px;
+            min-height: 36px;
+            border-radius: 9px;
+            font-size: .775rem;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background .22s var(--ease-out), color .22s var(--ease-out);
+        }
+
+        .mini-btn:hover { color: var(--ink-2); }
+        .mini-btn.active { background: rgba(255,255,255,.09); color: var(--ink); }
+
+        .chip {
+            border: 1px solid var(--glass-edge);
+            background: var(--glass-2);
+            color: var(--ink-3);
+            padding: 7px 13px;
+            min-height: 36px;
+            border-radius: 999px;
+            font-size: .775rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            white-space: nowrap;
+            transition: background .22s var(--ease-out), color .22s var(--ease-out), border-color .22s var(--ease-out);
+        }
+
+        .chip:hover { color: var(--ink-2); border-color: rgba(255,255,255,.16); }
+
+        .chip.on {
+            background: rgba(64,200,224,.14);
+            border-color: rgba(64,200,224,.3);
+            color: #a8ecf7;
+        }
+
+        .chip .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; opacity: .45; }
+        .chip.on .dot { opacity: 1; }
+
+        .panel-bar {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 13px;
+            padding: 18px 0 10px;
+        }
+
+        .panel-h { font-size: .96rem; font-weight: 600; }
+        .panel-sub { font-size: .775rem; color: var(--ink-3); margin-top: 3px; }
+
+        .pane { display: none; }
+        .pane.on { display: block; }
+
+        /* faixa de estatísticas */
+        .strip {
+            display: flex;
+            flex-wrap: wrap;
+            border: 1px solid var(--glass-edge);
+            border-radius: var(--r-sm);
+            background: rgba(255,255,255,.028);
+            overflow: hidden;
+            margin-top: 16px;
+        }
+
+        .strip-cell {
+            flex: 1 1 0;
+            min-width: 104px;
+            padding: 12px 16px;
+            border-right: 1px solid var(--glass-edge);
+        }
+        .strip-cell:last-child { border-right: none; }
+
+        .strip-k { font-size: .68rem; color: var(--ink-3); font-weight: 500; }
+        .strip-v {
+            font-size: 1.06rem;
+            font-weight: 700;
+            margin-top: 3px;
+            font-variant-numeric: tabular-nums;
+        }
+        .strip-v small { font-size: .7rem; font-weight: 500; color: var(--ink-3); }
+
+        /* ═══ Registro ═══ */
+        .log-panel {
+            padding: 22px 24px;
+            border-radius: var(--r-lg);
+        }
+
+        .table { margin-bottom: 0; color: var(--ink-2); }
 
         .table thead th {
-            font-size: 0.72rem;
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-            color: #64748b;
+            font-size: .72rem;
             font-weight: 600;
-            border-bottom-color: #e2e8f0;
-            padding: 8px 12px;
+            color: var(--ink-3);
+            background: transparent;
+            border-bottom: 1px solid var(--glass-edge);
+            padding: 11px 13px;
+            white-space: nowrap;
         }
 
         .table tbody td {
-            font-size: 0.83rem;
-            color: #334155;
-            padding: 10px 12px;
-            border-bottom-color: #f1f5f9;
+            font-size: .845rem;
+            color: var(--ink-2);
+            padding: 13px;
+            border-bottom: 1px solid rgba(255,255,255,.05);
             vertical-align: middle;
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+            background: transparent;
         }
 
         .table tbody tr:last-child td { border-bottom: none; }
 
-        .badge-ok    { background: #dcfce7; color: #15803d; font-size: 0.72rem; padding: 3px 8px; border-radius: 999px; font-weight: 600; }
-        .badge-alert { background: #fee2e2; color: #b91c1c; font-size: 0.72rem; padding: 3px 8px; border-radius: 999px; font-weight: 600; }
+        .table tbody tr { transition: background .22s var(--ease-out); }
+        .table tbody tr:hover td { background: rgba(255,255,255,.035); }
 
-        .divider { height: 1px; background: #f1f5f9; margin: 24px 0; }
+        .table tbody tr.hit td { background: rgba(64,200,224,.1); }
+        .table tbody tr.hit td:first-child { box-shadow: inset 3px 0 0 var(--teal); }
 
-        @media (max-width: 768px) {
-            .sidebar { width: 100%; height: auto; position: relative; }
-            .main-content { margin-left: 0; padding: 16px; }
+        .tag {
+            font-size: .72rem;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-weight: 600;
+            display: inline-block;
+            border: 1px solid transparent;
         }
+
+        .tag-ok    { background: rgba(48,209,88,.14);  border-color: rgba(48,209,88,.28);  color: #7ee89b; }
+        .tag-bad   { background: rgba(255,69,58,.14);  border-color: rgba(255,69,58,.3);   color: #ff9a93; }
+        .tag-trat  { background: rgba(10,132,255,.14); border-color: rgba(10,132,255,.28); color: #8fc6ff; }
+        .tag-bruta { background: rgba(255,159,10,.14); border-color: rgba(255,159,10,.28); color: #ffce7a; }
+
+        .nil { color: var(--ink-3); opacity: .55; }
+
+        /* ═══ Foco visível ═══ */
+        a:focus-visible,
+        button:focus-visible {
+            outline: 2px solid var(--teal);
+            outline-offset: 3px;
+            border-radius: 8px;
+        }
+
+        /* ═══ Plotly em tema escuro ═══ */
+        .js-plotly-plot .modebar { background: transparent !important; }
+        .js-plotly-plot .modebar-btn path { fill: var(--ink-3) !important; }
+        .js-plotly-plot .modebar-btn:hover path { fill: var(--teal) !important; }
+        .js-plotly-plot .rangeslider-mask-min,
+        .js-plotly-plot .rangeslider-mask-max { fill: rgba(8,11,18,.72) !important; }
+
+        /* ═══ Responsivo ═══ */
+        @media (max-width: 1200px) {
+            .hero { padding: 30px 30px; }
+            .ring-wrap { width: 200px; height: 200px; }
+            .ring-num { font-size: 2.7rem; }
+        }
+
+        @media (max-width: 992px) {
+            .sidebar {
+                position: relative;
+                width: 100%;
+                height: auto;
+                flex-direction: row;
+                align-items: center;
+                border-right: none;
+                border-bottom: 1px solid var(--glass-edge);
+                overflow-x: auto;
+            }
+            .nav-stack { display: flex; gap: 5px; padding: 12px; flex: 0 1 auto; }
+            .nav-group, .nav-foot { display: none; }
+            .nav-link-s { margin-bottom: 0; white-space: nowrap; }
+            .brand { border-bottom: none; padding: 14px 18px; }
+            .shell { margin-left: 0; padding: 20px 18px 48px; }
+            .hero { justify-content: center; text-align: center; }
+            .hero-h, .hero-p { max-width: none; }
+            .hero-acts { justify-content: center; }
+        }
+
+        @media (max-width: 575px) {
+            .shell { padding: 16px 14px 40px; }
+            .hero { padding: 26px 20px; }
+            .liquid-card { padding: 22px 22px 0; min-height: 244px; }
+            .liquid-num { font-size: 2.7rem; }
+            .ring-wrap { width: 184px; height: 184px; }
+            .ring-num { font-size: 2.4rem; }
+            .strip-cell { flex: 1 1 50%; min-width: 50%; }
+        }
+
+        /* ═══ Movimento reduzido ═══ */
+        @media (prefers-reduced-motion: reduce) {
+            html { scroll-behavior: auto; }
+            .wave { animation: none !important; }
+            .liquid-fill, .tile-bar span { transition: none !important; }
+            * { animation-duration: .001ms !important; animation-iteration-count: 1 !important; }
+        }
+
+        @media (prefers-reduced-motion: no-preference) {
+            .wave       { animation: drift 8s linear infinite; }
+            .wave-back  { animation: drift 12s linear infinite reverse; }
+            .ring-halo  { animation: breathe 5s ease-in-out infinite; }
+        }
+
+        @keyframes drift   { to { transform: translateX(-54.5%); } }
+        @keyframes breathe { 0%, 100% { opacity: .62; transform: scale(1); } 50% { opacity: 1; transform: scale(1.045); } }
     </style>
 </head>
 <body>
 
+<!-- Aurora -->
+<div class="aurora" aria-hidden="true">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+</div>
+
 <!-- ═══ SIDEBAR ═══ -->
 <aside class="sidebar">
-    <div class="sidebar-brand" style="padding:14px 16px; display:flex; align-items:center; gap:12px; border-bottom:1px solid rgba(255,255,255,0.08);">
-        <img src="{% static 'img/Logo.png' %}" alt="SIGUÁ" style="width:54px; height:auto; flex-shrink:0;">
-        <div>
-            <div style="color:#e2e8f0; font-size:0.68rem; line-height:1.4;">ETA Júlio Campos<br>DAE Várzea Grande/MT</div>
-        </div>
+    <div class="brand">
+        <img src="{% static 'img/Logo.png' %}" alt="SIGUÁ">
+        <div class="brand-unit">ETA Júlio Campos<br>DAE Várzea Grande</div>
     </div>
 
-    <nav class="sidebar-nav">
-        <div class="sidebar-label">Principal</div>
-        <a href="{% url 'dashboard' %}" class="nav-item-link active">
-            <i class="bi bi-speedometer2"></i> Dashboard
+    <nav class="nav-stack">
+        <div class="nav-group">Principal</div>
+        <a href="{% url 'dashboard' %}" class="nav-link-s active" aria-current="page">
+            <i class="bi bi-grid-1x2" aria-hidden="true"></i> Dashboard
         </a>
-        <a href="{% url 'nova_leitura' %}" class="nav-item-link">
-            <i class="bi bi-plus-circle"></i> Nova Leitura
+        <a href="{% url 'nova_leitura' %}" class="nav-link-s">
+            <i class="bi bi-plus-circle" aria-hidden="true"></i> Nova leitura
         </a>
-        <a href="{% url 'relatorio' %}" class="nav-item-link">
-            <i class="bi bi-file-earmark-bar-graph"></i> Relatório
+        <a href="{% url 'relatorio' %}" class="nav-link-s">
+            <i class="bi bi-file-earmark-text" aria-hidden="true"></i> Relatório
         </a>
 
-        <div class="sidebar-label">Sistema</div>
-        <a href="#" class="nav-item-link">
-            <i class="bi bi-sliders"></i> Configurações
+        <div class="nav-group">Sistema</div>
+        <a href="{% url 'configuracoes' %}" class="nav-link-s">
+            <i class="bi bi-sliders2" aria-hidden="true"></i> Configurações
         </a>
-        <a href="{% url 'logout' %}" class="nav-item-link">
-            <i class="bi bi-box-arrow-right"></i> Sair
+        <a href="{% url 'logout' %}" class="nav-link-s">
+            <i class="bi bi-box-arrow-right" aria-hidden="true"></i> Sair
         </a>
     </nav>
 
-    <div class="sidebar-footer">
-        <div style="color:#e2e8f0; font-size:0.78rem; font-weight:600;">
-            <i class="bi bi-person-circle me-1"></i>
-            {{ request.user.get_full_name|default:request.user.username }}
+    <div class="nav-foot">
+        <div class="who">
+            <span class="who-badge">{{ request.user.username|slice:":2"|upper }}</span>
+            <div>
+                <div class="who-name">{{ request.user.get_full_name|default:request.user.username }}</div>
+                <div class="who-sub">Operador</div>
+            </div>
         </div>
-        <small>Portaria GM/MS nº 888/2021</small>
     </div>
 </aside>
 
-<!-- ═══ CONTEÚDO PRINCIPAL ═══ -->
-<main class="main-content">
+<!-- ═══ CONTEÚDO ═══ -->
+<main class="shell">
 
-    <!-- Top bar -->
-    <div class="topbar">
-        <div>
-            <div class="topbar-title">Monitoramento em Tempo Real</div>
-            <div class="topbar-sub">
-                Parâmetros físico-químicos — última leitura:
-                {% if ultima_horario_local %}
-                    {{ ultima_horario_local|date:"d/m/Y" }} às {{ ultima_horario_local|date:"H:i" }}
-                {% else %}
-                    sem registros
-                {% endif %}
+    <!-- ─── Hero com o indicador ─── -->
+    <section class="hero glass" id="hero">
+        <div class="hero-text">
+            {% if ultima_leitura %}
+                <div class="verdict {% if tudo_conforme %}verdict-ok{% else %}verdict-bad{% endif %}">
+                    <span class="verdict-dot"></span>
+                    {% if tudo_conforme %}
+                        Conforme
+                    {% else %}
+                        {{ qtd_fora }} parâmetro{{ qtd_fora|pluralize }} fora do padrão
+                    {% endif %}
+                </div>
+
+                <h1 class="hero-h">
+                    {% if tudo_conforme %}
+                        Água dentro do padrão de potabilidade
+                    {% else %}
+                        {{ nomes_fora }} fora do padrão
+                    {% endif %}
+                </h1>
+
+                <p class="hero-p">
+                    {% if tudo_conforme %}
+                        {% if qtd_medidos == 1 %}
+                            O único parâmetro medido nesta leitura está dentro do limite
+                            da Portaria GM/MS nº 888/2021.
+                        {% else %}
+                            Os {{ qtd_medidos }} parâmetros medidos nesta leitura estão dentro
+                            dos limites da Portaria GM/MS nº 888/2021.
+                        {% endif %}
+                    {% else %}
+                        {{ qtd_ok }} de {{ qtd_medidos }} parâmetros medidos estão dentro dos limites
+                        da Portaria GM/MS nº 888/2021. A água não atende ao padrão de potabilidade
+                        enquanto houver parâmetro fora.
+                    {% endif %}
+                    Medido em {{ ultima_horario_local|date:"j \d\e F \d\e Y"|lower }}, às {{ ultima_horario_local|date:"H:i" }}.
+                </p>
+
+            {% else %}
+                <h1 class="hero-h">Nenhuma leitura registrada</h1>
+                <p class="hero-p">Registre a primeira leitura para o painel começar a acompanhar a qualidade da água.</p>
+            {% endif %}
+
+            <div class="hero-acts">
+                <a href="{% url 'nova_leitura' %}" class="btn-s btn-s-fill">
+                    <i class="bi bi-plus-lg" aria-hidden="true"></i> Registrar leitura
+                </a>
+                <a href="{% url 'relatorio' %}" class="btn-s">
+                    <i class="bi bi-file-earmark-text" aria-hidden="true"></i> Ver relatório
+                </a>
             </div>
         </div>
+
         {% if ultima_leitura %}
-        <span class="status-badge {% if ultima_leitura.status_conformidade %}ok{% else %}alert{% endif %}">
-            <span class="dot"></span>
-            {% if ultima_leitura.status_conformidade %}Dentro da Portaria 888{% else %}Fora da Conformidade{% endif %}
-        </span>
+        <div class="ring-wrap{% if amostras_realizadas >= amostras_exigidas %} completo{% endif %}" id="ringWrap"
+             data-feitas="{{ amostras_realizadas }}" data-exigidas="{{ amostras_exigidas }}">
+            <div class="ring-halo" aria-hidden="true"></div>
+            <svg class="ring-svg" width="236" height="236" viewBox="0 0 236 236" aria-hidden="true">
+                <defs>
+                    <linearGradient id="arcGrad" x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0%"   stop-color="#40c8e0"/>
+                        <stop offset="100%" stop-color="#0a84ff"/>
+                    </linearGradient>
+                    <linearGradient id="arcGradFeito" x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0%"   stop-color="#30d158"/>
+                        <stop offset="100%" stop-color="#40c8e0"/>
+                    </linearGradient>
+                </defs>
+                <circle class="ring-track" cx="118" cy="118" r="94"/>
+                <circle class="ring-arc" id="ringArc" cx="118" cy="118" r="94"/>
+            </svg>
+            <div class="ring-core">
+                <div class="ring-num" id="ringNum">0</div>
+                <div class="ring-unit">de {{ amostras_exigidas }} amostras</div>
+                <div class="ring-cap">
+                    {% if amostras_restantes %}
+                        faltam {{ amostras_restantes }} {{ amostras_rotulo }}
+                    {% else %}
+                        meta cumprida {{ amostras_rotulo }}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
         {% endif %}
+    </section>
+
+    {% if ultima_leitura %}
+    <!-- ─── Leituras ─── -->
+    <div class="sec-head">
+        <h2 class="sec-title">Leitura mais recente</h2>
+        <span class="sec-note">Comparada ao intervalo exigido pela portaria</span>
     </div>
 
-    <!-- KPI Cards — Água Tratada -->
-    <div class="row g-3 mb-4">
-        <div class="col-6 col-md-3">
-            <div class="kpi-card blue">
-                <div class="d-flex justify-content-between align-items-start">
-                    <div>
-                        <div class="kpi-label">Turbidez</div>
-                        <div class="kpi-value">{% if ultima_leitura %}{{ ultima_leitura.turbidez_ntu|floatformat:2 }}{% else %}--{% endif %}</div>
-                        <div class="kpi-unit">NTU · limite 5,0</div>
+    <div class="row g-3">
+        <!-- Cartão líquido: vazão -->
+        <div class="col-lg-6">
+            <div class="liquid-card glass" id="liquidVazao">
+                <div class="liquid-fill" id="liquidFill">
+                    <svg class="wave wave-back" viewBox="0 0 1200 26" preserveAspectRatio="none" aria-hidden="true">
+                        <path d="M0,13 C150,26 300,0 600,13 C900,26 1050,0 1200,13 L1200,26 L0,26 Z"/>
+                    </svg>
+                    <svg class="wave" viewBox="0 0 1200 26" preserveAspectRatio="none" aria-hidden="true">
+                        <path d="M0,13 C150,0 300,26 600,13 C900,0 1050,26 1200,13 L1200,26 L0,26 Z"/>
+                    </svg>
+                </div>
+
+                <div class="liquid-body">
+                    <div class="liquid-label">Vazão tratada</div>
+                    <div class="liquid-read">
+                        <span class="liquid-num" id="vazaoNum">0,0</span>
+                        <span class="liquid-unit">L/s</span>
                     </div>
-                    <div class="kpi-icon blue"><i class="bi bi-droplet"></i></div>
+                    <div class="liquid-cap">
+                        {% if fonte_vazao.nivel %}
+                            Convertida de {{ fonte_vazao.nivel|floatformat:1 }} cm lidos na calha Parshall
+                        {% elif fonte_vazao %}
+                            Informada sem leitura de nível na calha
+                        {% else %}
+                            Nenhuma leitura de vazão registrada
+                        {% endif %}
+                        {% if fonte_vazao_antiga %}
+                            <br>Medida em {{ fonte_vazao.rotulo }}
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="liquid-foot">
+                    <svg class="spark" id="sparkVazao" width="170" height="40" viewBox="0 0 170 40" aria-hidden="true"></svg>
+                    <div class="foot-stat">
+                        <div class="foot-stat-k">Nível na calha</div>
+                        <div class="foot-stat-v">
+                            {% if fonte_vazao.nivel %}
+                                {{ fonte_vazao.nivel|floatformat:1 }} de {{ nivel_maximo_cm|floatformat:0 }} cm
+                            {% else %}
+                                — de {{ nivel_maximo_cm|floatformat:0 }} cm
+                            {% endif %}
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="col-6 col-md-3">
-            <div class="kpi-card {% if ultima_leitura.cor_uh and ultima_leitura.cor_uh <= 15 %}green{% elif ultima_leitura.cor_uh %}red{% else %}blue{% endif %}">
-                <div class="d-flex justify-content-between align-items-start">
-                    <div>
-                        <div class="kpi-label">Cor Aparente</div>
-                        <div class="kpi-value">{% if ultima_leitura and ultima_leitura.cor_uh %}{{ ultima_leitura.cor_uh|floatformat:1 }}{% else %}--{% endif %}</div>
-                        <div class="kpi-unit">uH · limite 15</div>
+
+        <!-- Tiles -->
+        <div class="col-lg-6">
+            <div class="row g-3">
+                <div class="col-6">
+                    <div class="tile glass">
+                        <div class="tile-top">
+                            <span class="tile-label">pH</span>
+                            <span class="tile-ico"><i class="bi bi-activity" aria-hidden="true"></i></span>
+                        </div>
+                        {% if ultima_leitura.ph %}
+                            <div class="tile-num {% if ultima_leitura.ph >= 6.0 and ultima_leitura.ph <= 9.5 %}ok-txt{% else %}bad-txt{% endif %}">{{ ultima_leitura.ph|floatformat:2 }}</div>
+                            <div class="tile-cap">
+                                {% if ultima_leitura.ph >= 6.0 and ultima_leitura.ph <= 9.5 %}Dentro da faixa de 6,0 a 9,5{% else %}Fora da faixa de 6,0 a 9,5{% endif %}
+                            </div>
+                            <div class="tile-bar">
+                                <span data-fill="{% widthratio ultima_leitura.ph 14 100 %}"
+                                      style="background: {% if ultima_leitura.ph >= 6.0 and ultima_leitura.ph <= 9.5 %}var(--green){% else %}var(--red){% endif %};"></span>
+                            </div>
+                        {% else %}
+                            <div class="tile-num none-txt">—</div>
+                            <div class="tile-cap">Não medido nesta leitura</div>
+                        {% endif %}
                     </div>
-                    <div class="kpi-icon {% if ultima_leitura.cor_uh and ultima_leitura.cor_uh <= 15 %}green{% elif ultima_leitura.cor_uh %}red{% else %}blue{% endif %}"><i class="bi bi-palette"></i></div>
                 </div>
-            </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="kpi-card {% if ultima_leitura.ph and ultima_leitura.ph >= 6.0 and ultima_leitura.ph <= 9.5 %}green{% elif ultima_leitura.ph %}red{% else %}blue{% endif %}">
-                <div class="d-flex justify-content-between align-items-start">
-                    <div>
-                        <div class="kpi-label">pH</div>
-                        <div class="kpi-value">{% if ultima_leitura and ultima_leitura.ph %}{{ ultima_leitura.ph|floatformat:2 }}{% else %}--{% endif %}</div>
-                        <div class="kpi-unit">6,0 – 9,5</div>
+
+                <div class="col-6">
+                    <div class="tile glass">
+                        <div class="tile-top">
+                            <span class="tile-label">Cloro residual</span>
+                            <span class="tile-ico"><i class="bi bi-shield-check" aria-hidden="true"></i></span>
+                        </div>
+                        {% if ultima_leitura.cloro_residual_mgl %}
+                            <div class="tile-num {% if ultima_leitura.cloro_residual_mgl >= 0.2 and ultima_leitura.cloro_residual_mgl <= 5.0 %}ok-txt{% else %}bad-txt{% endif %}">{{ ultima_leitura.cloro_residual_mgl|floatformat:2 }}</div>
+                            <div class="tile-cap">mg/L, entre 0,2 e 5,0 permitidos</div>
+                            <div class="tile-bar">
+                                <span data-fill="{% widthratio ultima_leitura.cloro_residual_mgl 5 100 %}"
+                                      style="background: {% if ultima_leitura.cloro_residual_mgl >= 0.2 and ultima_leitura.cloro_residual_mgl <= 5.0 %}var(--green){% else %}var(--red){% endif %};"></span>
+                            </div>
+                        {% else %}
+                            <div class="tile-num none-txt">—</div>
+                            <div class="tile-cap">Não medido nesta leitura</div>
+                        {% endif %}
                     </div>
-                    <div class="kpi-icon {% if ultima_leitura.ph and ultima_leitura.ph >= 6.0 and ultima_leitura.ph <= 9.5 %}green{% elif ultima_leitura.ph %}red{% else %}blue{% endif %}"><i class="bi bi-activity"></i></div>
                 </div>
-            </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="kpi-card {% if ultima_leitura.cloro_residual_mgl and ultima_leitura.cloro_residual_mgl >= 0.2 and ultima_leitura.cloro_residual_mgl <= 5.0 %}green{% elif ultima_leitura.cloro_residual_mgl %}red{% else %}blue{% endif %}">
-                <div class="d-flex justify-content-between align-items-start">
-                    <div>
-                        <div class="kpi-label">Cloro Residual</div>
-                        <div class="kpi-value">{% if ultima_leitura and ultima_leitura.cloro_residual_mgl %}{{ ultima_leitura.cloro_residual_mgl|floatformat:2 }}{% else %}--{% endif %}</div>
-                        <div class="kpi-unit">mg/L · 0,2–5,0</div>
+
+                <div class="col-6">
+                    <div class="tile glass">
+                        <div class="tile-top">
+                            <span class="tile-label">Cor aparente</span>
+                            <span class="tile-ico"><i class="bi bi-palette" aria-hidden="true"></i></span>
+                        </div>
+                        {% if ultima_leitura.cor_uh %}
+                            <div class="tile-num {% if ultima_leitura.cor_uh <= 15 %}ok-txt{% else %}bad-txt{% endif %}">{{ ultima_leitura.cor_uh|floatformat:1 }}</div>
+                            <div class="tile-cap">uH, até 15 permitidos</div>
+                            <div class="tile-bar">
+                                <span data-fill="{% widthratio ultima_leitura.cor_uh 15 100 %}"
+                                      style="background: {% if ultima_leitura.cor_uh <= 15 %}var(--green){% else %}var(--red){% endif %};"></span>
+                            </div>
+                        {% else %}
+                            <div class="tile-num none-txt">—</div>
+                            <div class="tile-cap">Não medido nesta leitura</div>
+                        {% endif %}
                     </div>
-                    <div class="kpi-icon {% if ultima_leitura.cloro_residual_mgl and ultima_leitura.cloro_residual_mgl >= 0.2 and ultima_leitura.cloro_residual_mgl <= 5.0 %}green{% elif ultima_leitura.cloro_residual_mgl %}red{% else %}blue{% endif %}"><i class="bi bi-shield-check"></i></div>
+                </div>
+
+                <div class="col-6">
+                    <div class="tile glass">
+                        <div class="tile-top">
+                            <span class="tile-label">Turbidez</span>
+                            <span class="tile-ico"><i class="bi bi-circle-half" aria-hidden="true"></i></span>
+                        </div>
+                        {% if ultima_leitura.turbidez_ntu is not None %}
+                            <div class="tile-num {% if ultima_leitura.turbidez_ntu <= 5 %}ok-txt{% else %}bad-txt{% endif %}">{{ ultima_leitura.turbidez_ntu|floatformat:2 }}</div>
+                            <div class="tile-cap">NTU, até 5,0 permitidos</div>
+                            <div class="tile-bar">
+                                <span data-fill="{% widthratio ultima_leitura.turbidez_ntu 5 100 %}"
+                                      style="background: {% if ultima_leitura.turbidez_ntu <= 5 %}var(--green){% else %}var(--red){% endif %};"></span>
+                            </div>
+                        {% else %}
+                            <div class="tile-num none-txt">—</div>
+                            <div class="tile-cap">Não medido nesta leitura</div>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Gauges -->
-    <div class="row g-3 mb-4">
-        <div class="col-md-6">
-            <div class="chart-card">
-                <div class="chart-card-title"><i class="bi bi-droplet me-2 text-primary"></i>Turbidez atual (NTU)</div>
-                <div id="gaugeTurbidez" style="height:200px;"></div>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="chart-card">
-                <div class="chart-card-title"><i class="bi bi-water me-2 text-success"></i>Vazão atual (L/s)</div>
-                <div id="gaugeVazao" style="height:200px;"></div>
-            </div>
-        </div>
+    <!-- ─── Análise ─── -->
+    <div class="sec-head">
+        <h2 class="sec-title">Análise da série</h2>
+        <span class="sec-note">Arraste no gráfico para aproximar, duplo clique para voltar, clique num ponto para achá-lo no registro</span>
     </div>
 
-    <!-- Gráfico geral -->
-    <div class="chart-card mb-4">
-        <div class="chart-card-title"><i class="bi bi-activity me-2 text-secondary"></i>Histórico — Turbidez × Vazão (últimas 30 leituras)</div>
-        <div id="graficoGeral" style="height:300px;"></div>
+    <section class="chart-panel glass" id="chartPanel">
+        <div class="panel-top">
+            <div class="seg" id="segMetricas" role="tablist">
+                <button class="seg-btn active" data-tab="vazao" role="tab" aria-selected="true">
+                    <i class="bi bi-droplet-half" aria-hidden="true"></i> Vazão
+                </button>
+                <button class="seg-btn" data-tab="turbidez" role="tab" aria-selected="false">
+                    <i class="bi bi-circle-half" aria-hidden="true"></i> Turbidez
+                </button>
+                <button class="seg-btn" data-tab="comparar" role="tab" aria-selected="false">
+                    <i class="bi bi-layers" aria-hidden="true"></i> Comparar
+                </button>
+            </div>
+
+            <div class="mini" id="segJanela">
+                <button class="mini-btn" data-janela="10">10 últimas</button>
+                <button class="mini-btn active" data-janela="30">30 últimas</button>
+                <button class="mini-btn" data-janela="0">Série inteira</button>
+            </div>
+        </div>
+
+        <!-- Vazão -->
+        <div class="pane on" id="pane-vazao">
+            <div class="panel-bar">
+                <div>
+                    <div class="panel-h">Vazão ao longo do tempo</div>
+                    <div class="panel-sub">Litros por segundo na saída da estação</div>
+                </div>
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <div class="mini" data-tipo-para="vazao">
+                        <button class="mini-btn" data-tipo="linha">Linha</button>
+                        <button class="mini-btn active" data-tipo="area">Área</button>
+                        <button class="mini-btn" data-tipo="barras">Barras</button>
+                    </div>
+                    <button class="chip on" data-toggle="media" data-para="vazao"><span class="dot"></span> Média</button>
+                    <button class="chip" data-acao="reset" data-para="vazao"><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i> Reaproximar</button>
+                </div>
+            </div>
+            <div id="graficoVazao" style="height:392px;"></div>
+            <div class="strip" id="statsVazao"></div>
+        </div>
+
+        <!-- Turbidez -->
+        <div class="pane" id="pane-turbidez">
+            <div class="panel-bar">
+                <div>
+                    <div class="panel-h">Turbidez ao longo do tempo</div>
+                    <div class="panel-sub">Pontos acima do limite legal recebem marcador em losango</div>
+                </div>
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <div class="mini" data-tipo-para="turbidez">
+                        <button class="mini-btn active" data-tipo="linha">Linha</button>
+                        <button class="mini-btn" data-tipo="area">Área</button>
+                        <button class="mini-btn" data-tipo="barras">Barras</button>
+                    </div>
+                    <button class="chip on" data-toggle="media" data-para="turbidez"><span class="dot"></span> Média</button>
+                    <button class="chip on" data-toggle="limite" data-para="turbidez"><span class="dot"></span> Limite legal</button>
+                    <button class="chip" data-toggle="bruta" data-para="turbidez"><span class="dot"></span> Água bruta</button>
+                    <button class="chip" data-acao="reset" data-para="turbidez"><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i> Reaproximar</button>
+                </div>
+            </div>
+            <div id="graficoTurbidez" style="height:392px;"></div>
+            <div class="strip" id="statsTurbidez"></div>
+        </div>
+
+        <!-- Comparar -->
+        <div class="pane" id="pane-comparar">
+            <div class="panel-bar">
+                <div>
+                    <div class="panel-h">Turbidez e vazão juntas</div>
+                    <div class="panel-sub">Turbidez no eixo da esquerda, vazão no da direita</div>
+                </div>
+                <button class="chip" data-acao="reset" data-para="comparar"><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i> Reaproximar</button>
+            </div>
+            <div id="graficoComparar" style="height:392px;"></div>
+        </div>
+    </section>
+    {% endif %}
+
+    <!-- ─── Registro ─── -->
+    <div class="sec-head">
+        <h2 class="sec-title">Registro de leituras</h2>
+        <span class="sec-note" id="logNote">As dez leituras mais recentes</span>
     </div>
 
-    <!-- Tabela de histórico -->
-    <div class="table-card">
-        <div class="chart-card-title mb-3"><i class="bi bi-table me-2 text-secondary"></i>Últimas leituras</div>
+    <section class="log-panel glass" id="logPanel">
         <div class="table-responsive">
-            <table class="table table-hover mb-0">
+            <table class="table table-borderless">
                 <thead>
                     <tr>
-                        <th>Data</th>
-                        <th>Ponto</th>
-                        <th>Turbidez T. (NTU)</th>
-                        <th>Turbidez B. (NTU)</th>
-                        <th>pH T.</th>
-                        <th>pH B.</th>
-                        <th>Cloro (mg/L)</th>
-                        <th>Cor T. (uH)</th>
-                        <th>Cor B. (uH)</th>
-                        <th>Coliformes</th>
-                        <th>Status</th>
+                        <th scope="col">Data</th>
+                        <th scope="col">Ponto</th>
+                        <th scope="col">Turbidez tratada</th>
+                        <th scope="col">Turbidez bruta</th>
+                        <th scope="col">pH tratado</th>
+                        <th scope="col">pH bruto</th>
+                        <th scope="col">Cloro</th>
+                        <th scope="col">Cor tratada</th>
+                        <th scope="col">Cor bruta</th>
+                        <th scope="col">Coliformes</th>
+                        <th scope="col">Situação</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="logBody">
                     {% for leitura in leituras %}
-                    <tr>
-                        <td>{{ leitura.horario|date:"d/m/Y" }}</td>
+                    <tr data-leitura-id="{{ leitura.id }}">
+                        <td>{{ leitura.horario|date:"d/m/Y H:i" }}</td>
                         <td>
                             {% if leitura.ponto_coleta == 'agua_tratada' %}
-                                <span style="background:#dbeafe;color:#1d4ed8;font-size:0.7rem;padding:2px 7px;border-radius:999px;font-weight:600;">Tratada</span>
+                                <span class="tag tag-trat">Tratada</span>
                             {% elif leitura.ponto_coleta == 'agua_bruta' %}
-                                <span style="background:#ffedd5;color:#c2410c;font-size:0.7rem;padding:2px 7px;border-radius:999px;font-weight:600;">Bruta</span>
+                                <span class="tag tag-bruta">Bruta</span>
                             {% else %}
-                                <span style="color:#94a3b8;font-size:0.78rem;">—</span>
+                                <span class="nil">—</span>
                             {% endif %}
                         </td>
                         <td>{{ leitura.turbidez_ntu|floatformat:2 }}</td>
-                        <td>{% if leitura.turbidez_bruta_ntu %}{{ leitura.turbidez_bruta_ntu|floatformat:1 }}{% else %}<span style="color:#cbd5e1">—</span>{% endif %}</td>
-                        <td>{% if leitura.ph %}{{ leitura.ph|floatformat:2 }}{% else %}<span style="color:#cbd5e1">—</span>{% endif %}</td>
-                        <td>{% if leitura.ph_bruto %}{{ leitura.ph_bruto|floatformat:2 }}{% else %}<span style="color:#cbd5e1">—</span>{% endif %}</td>
-                        <td>{% if leitura.cloro_residual_mgl %}{{ leitura.cloro_residual_mgl|floatformat:2 }}{% else %}<span style="color:#cbd5e1">—</span>{% endif %}</td>
-                        <td>{% if leitura.cor_uh %}{{ leitura.cor_uh|floatformat:1 }}{% else %}<span style="color:#cbd5e1">—</span>{% endif %}</td>
-                        <td>{% if leitura.cor_bruta_uh %}{{ leitura.cor_bruta_uh|floatformat:1 }}{% else %}<span style="color:#cbd5e1">—</span>{% endif %}</td>
-                        <td>{% if leitura.coliformes_ufc is not None %}{{ leitura.coliformes_ufc|floatformat:0 }}{% else %}<span style="color:#cbd5e1">—</span>{% endif %}</td>
+                        <td>{% if leitura.turbidez_bruta_ntu %}{{ leitura.turbidez_bruta_ntu|floatformat:1 }}{% else %}<span class="nil">—</span>{% endif %}</td>
+                        <td>{% if leitura.ph %}{{ leitura.ph|floatformat:2 }}{% else %}<span class="nil">—</span>{% endif %}</td>
+                        <td>{% if leitura.ph_bruto %}{{ leitura.ph_bruto|floatformat:2 }}{% else %}<span class="nil">—</span>{% endif %}</td>
+                        <td>{% if leitura.cloro_residual_mgl %}{{ leitura.cloro_residual_mgl|floatformat:2 }}{% else %}<span class="nil">—</span>{% endif %}</td>
+                        <td>{% if leitura.cor_uh %}{{ leitura.cor_uh|floatformat:1 }}{% else %}<span class="nil">—</span>{% endif %}</td>
+                        <td>{% if leitura.cor_bruta_uh %}{{ leitura.cor_bruta_uh|floatformat:1 }}{% else %}<span class="nil">—</span>{% endif %}</td>
+                        <td>{% if leitura.coliformes_ufc is not None %}{{ leitura.coliformes_ufc|floatformat:0 }}{% else %}<span class="nil">—</span>{% endif %}</td>
                         <td>
                             {% if leitura.status_conformidade %}
-                                <span class="badge-ok">Conforme</span>
+                                <span class="tag tag-ok">Conforme</span>
                             {% else %}
-                                <span class="badge-alert">Alerta</span>
+                                <span class="tag tag-bad">Alerta</span>
                             {% endif %}
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="11" class="text-center text-muted py-4">Nenhuma leitura registrada.</td>
+                        <td colspan="11" class="text-center py-5">
+                            <div style="color:var(--ink-2); font-weight:600; margin-bottom:6px;">Nenhuma leitura registrada</div>
+                            <div class="nil" style="font-size:.82rem;">Registre a primeira para começar o acompanhamento.</div>
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
-    </div>
+    </section>
 
 </main>
 
-<!-- ═══ MODAL RELATÓRIO ═══ -->
-<div class="modal fade" id="modalRelatorio" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content" style="border-radius:14px; border:none;">
-            <div class="modal-header" style="background:#0f2744; border-radius:14px 14px 0 0;">
-                <h5 class="modal-title text-white fw-semibold">
-                    <i class="bi bi-file-earmark-bar-graph me-2"></i>Relatório Mensal
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body px-4 py-3">
-                <p class="text-muted small mb-3">Resumo de conformidade — Portaria GM/MS nº 888/2021</p>
-                <ul class="list-group list-group-flush">
-                    <li class="list-group-item d-flex justify-content-between px-0">
-                        <span class="text-secondary small">Amostras exigidas</span>
-                        <span class="badge bg-secondary rounded-pill">720</span>
-                    </li>
-                    <li class="list-group-item d-flex justify-content-between px-0">
-                        <span class="text-secondary small">Amostras realizadas</span>
-                        <span class="badge bg-primary rounded-pill">715</span>
-                    </li>
-                    <li class="list-group-item d-flex justify-content-between px-0">
-                        <span class="text-secondary small">Em conformidade</span>
-                        <span class="badge bg-success rounded-pill">710</span>
-                    </li>
-                    <li class="list-group-item d-flex justify-content-between px-0">
-                        <span class="text-secondary small">Média (Turbidez)</span>
-                        <strong>2.4 NTU</strong>
-                    </li>
-                    <li class="list-group-item d-flex justify-content-between px-0">
-                        <span class="text-secondary small">Limite permitido</span>
-                        <strong class="text-danger">5.0 NTU</strong>
-                    </li>
-                </ul>
-            </div>
-            <div class="modal-footer border-0 px-4 pb-4">
-                <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Fechar</button>
-                <button type="button" class="btn btn-sm btn-success">
-                    <i class="bi bi-file-earmark-excel me-1"></i>Baixar Planilha
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-{% if ultima_leitura %}
-var horarios = {{ horarios_json|safe }};
-var turbidez = {{ turbidez_json|safe }};
-var vazao    = {{ vazao_json|safe }};
+(function () {
+    "use strict";
 
-var gaugeLayout = {
-    margin: { t: 20, b: 10, l: 20, r: 20 },
-    paper_bgcolor: 'rgba(0,0,0,0)',
-    font: { family: 'Inter, sans-serif', color: '#334155' }
-};
+    var SERIE  = {{ serie_json|safe }};
+    var RESUMO = {{ resumo_json|safe }};
 
-// Gauge Turbidez
-Plotly.newPlot('gaugeTurbidez', [{
-    type: "indicator", mode: "gauge+number",
-    value: {{ ultima_leitura.turbidez_ntu|stringformat:"f" }},
-    number: { suffix: " NTU", font: { size: 24 } },
-    gauge: {
-        axis: { range: [0, 10], tickwidth: 1, tickcolor: "#94a3b8", tickfont: { size: 11 } },
-        bar: { color: "#2563eb", thickness: 0.25 },
-        bgcolor: "#f8fafc",
-        borderwidth: 0,
-        steps: [
-            { range: [0, 5],  color: "#dbeafe" },
-            { range: [5, 10], color: "#fee2e2" }
-        ],
-        threshold: { line: { color: "#dc2626", width: 3 }, thickness: 0.75, value: 5.0 }
+    // Em ambiente sem matchMedia, segue com animação em vez de quebrar a página.
+    var CALMO = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+    // Anima só se o usuário aceita movimento e o GSAP realmente carregou.
+    var ANIMAR = !CALMO && typeof gsap !== 'undefined';
+    var LIMITE_TURBIDEZ = 5.0;
+
+    var COR = {
+        teal:   '#40c8e0',
+        orange: '#ff9f0a',
+        red:    '#ff453a',
+        bruta:  '#c77b2a',
+        grade:  'rgba(255,255,255,.07)',
+        linha:  'rgba(255,255,255,.12)',
+        ink2:   '#9aa6b8',
+        ink3:   '#7886a0'
+    };
+
+    /* ───────────── Entrada orquestrada ───────────── */
+
+    // Mostra tudo sem animar. Usado com movimento reduzido e se o GSAP não carregar.
+    function revelarTudo() {
+        document.querySelectorAll('.hero, .liquid-card, .tile, .chart-panel, .log-panel')
+            .forEach(function (el) {
+                el.style.opacity = '1';
+                el.style.transform = 'none';
+            });
+        document.querySelectorAll('.blob').forEach(function (b) { b.style.opacity = '.55'; });
     }
-}], gaugeLayout, { displayModeBar: false, responsive: true });
 
-// Gauge Vazão
-Plotly.newPlot('gaugeVazao', [{
-    type: "indicator", mode: "gauge+number",
-    value: {{ ultima_leitura.vazao_ls|stringformat:"f" }},
-    number: { suffix: " L/s", font: { size: 24 } },
-    gauge: {
-        axis: { range: [0, 500], tickwidth: 1, tickcolor: "#94a3b8", tickfont: { size: 11 } },
-        bar: { color: "#16a34a", thickness: 0.25 },
-        bgcolor: "#f8fafc",
-        borderwidth: 0,
-        steps: [{ range: [0, 500], color: "#dcfce7" }]
+    function entrada() {
+        var blobs = document.querySelectorAll('.blob');
+
+        if (!ANIMAR) {
+            revelarTudo();
+            return;
+        }
+
+        gsap.to(blobs, { opacity: .62, duration: 1.5, stagger: .18, ease: 'power1.out' });
+
+        var tl = gsap.timeline({ defaults: { ease: 'power2.out' } });
+
+        tl.fromTo('#hero', { opacity: 0, y: 26 }, { opacity: 1, y: 0, duration: .66 })
+          .fromTo('#liquidVazao', { opacity: 0, y: 22 }, { opacity: 1, y: 0, duration: .52 }, '-=0.34')
+          .fromTo('.tile', { opacity: 0, y: 22 }, { opacity: 1, y: 0, duration: .46, stagger: .08 }, '-=0.38');
+
+        // Abaixo da dobra: revela quando entra na viewport, sem plugin.
+        ['#chartPanel', '#logPanel'].forEach(function (sel) {
+            var el = document.querySelector(sel);
+            if (!el) { return; }
+
+            var obs = new IntersectionObserver(function (entradas) {
+                entradas.forEach(function (e) {
+                    if (!e.isIntersecting) { return; }
+                    gsap.fromTo(el, { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: .55, ease: 'power2.out' });
+                    obs.unobserve(el);
+                });
+            }, { threshold: .12 });
+
+            obs.observe(el);
+        });
     }
-}], gaugeLayout, { displayModeBar: false, responsive: true });
 
-// Gráfico geral
-var trace1 = {
-    x: horarios, y: turbidez,
-    name: 'Turbidez (NTU)',
-    type: 'scatter', mode: 'lines+markers',
-    line: { color: '#2563eb', width: 2 },
-    marker: { size: 4, color: '#2563eb' }
-};
-var trace2 = {
-    x: horarios, y: vazao,
-    name: 'Vazão (L/s)',
-    type: 'scatter', mode: 'lines',
-    line: { color: '#16a34a', width: 2, dash: 'dot' },
-    yaxis: 'y2'
-};
+    /* ───────────── Números que contam ───────────── */
+    function contar(el, alvo, casas) {
+        if (!el) { return; }
 
-Plotly.newPlot('graficoGeral', [trace1, trace2], {
-    margin: { t: 10, b: 40, l: 45, r: 45 },
-    paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: '#fff',
-    font: { family: 'Inter, sans-serif', size: 11, color: '#64748b' },
-    legend: { orientation: 'h', y: -0.25, font: { size: 12 } },
-    xaxis: { gridcolor: '#f1f5f9', linecolor: '#e2e8f0' },
-    yaxis: {
-        title: { text: 'Turbidez (NTU)', font: { color: '#2563eb', size: 11 } },
-        tickfont: { color: '#2563eb' }, gridcolor: '#f1f5f9', linecolor: '#e2e8f0'
-    },
-    yaxis2: {
-        title: { text: 'Vazão (L/s)', font: { color: '#16a34a', size: 11 } },
-        tickfont: { color: '#16a34a' },
-        overlaying: 'y', side: 'right', gridcolor: 'transparent'
+        var fmt = function (v) { return v.toFixed(casas).replace('.', ','); };
+
+        if (!ANIMAR) { el.textContent = fmt(alvo); return; }
+
+        var estado = { v: 0 };
+        gsap.to(estado, {
+            v: alvo,
+            duration: 1.5,
+            ease: 'expo.out',
+            onUpdate: function () { el.textContent = fmt(estado.v); }
+        });
     }
-}, { responsive: true, displayModeBar: false });
-{% endif %}
+
+    /* ───────────── Indicador: controle de amostragem ─────────────
+       Amostras realizadas no período contra a meta da portaria. */
+    function indicador() {
+        var wrap = document.getElementById('ringWrap');
+        var arco = document.getElementById('ringArc');
+        if (!wrap || !arco) { return; }
+
+        var feitas = parseInt(wrap.dataset.feitas, 10);
+        var exigidas = parseInt(wrap.dataset.exigidas, 10);
+        if (isNaN(feitas) || isNaN(exigidas) || exigidas < 1) { return; }
+
+        var fracao = Math.min(feitas / exigidas, 1);
+
+        var raio = parseFloat(arco.getAttribute('r'));
+        var volta = 2 * Math.PI * raio;
+
+        arco.style.strokeDasharray = volta;
+        arco.style.strokeDashoffset = volta;
+
+        if (!ANIMAR) {
+            arco.style.strokeDashoffset = volta * (1 - fracao);
+        } else {
+            gsap.to(arco.style, {
+                strokeDashoffset: volta * (1 - fracao),
+                duration: 1.7,
+                ease: 'expo.out'
+            });
+        }
+
+        contar(document.getElementById('ringNum'), feitas, 0);
+
+        // Equivalente textual para leitor de tela — o visual não carrega sozinho.
+        var faltam = Math.max(exigidas - feitas, 0);
+        wrap.setAttribute('role', 'img');
+        wrap.setAttribute('aria-label',
+            feitas + ' de ' + exigidas + ' amostras exigidas foram realizadas' +
+            (faltam ? ', faltam ' + faltam + '.' : '. Meta cumprida.'));
+    }
+
+    /* ───────────── Cartão líquido da vazão ───────────── */
+    function liquido() {
+        var fill = document.getElementById('liquidFill');
+        var fonte = RESUMO.fonte_vazao;
+        if (!fill || !fonte) { return; }
+
+        var valor = fonte.vazao;
+
+        // A água representa a altura lida na calha, que é de onde a vazão vem.
+        // Sem leitura de nível, fica num traço mínimo em vez de mentir a escala.
+        var nivel = (fonte.nivel === undefined) ? null : fonte.nivel;
+        var pct = (nivel === null)
+            ? 8
+            : Math.max(Math.min(nivel / RESUMO.nivel_maximo, 1), .08) * 100;
+
+        contar(document.getElementById('vazaoNum'), valor, 1);
+
+        // height tem transição no CSS; disparar no próximo frame garante a animação.
+        requestAnimationFrame(function () { fill.style.height = pct.toFixed(1) + '%'; });
+
+        var card = document.getElementById('liquidVazao');
+        if (card) {
+            card.setAttribute('role', 'img');
+            card.setAttribute('aria-label',
+                'Vazão tratada de ' + valor.toFixed(1).replace('.', ',') + ' litros por segundo' +
+                (nivel === null
+                    ? ', sem leitura de nível na calha.'
+                    : ', convertida de ' + nivel.toFixed(1).replace('.', ',') +
+                      ' centímetros lidos na calha Parshall, de ' + RESUMO.nivel_maximo + ' no máximo.'));
+        }
+
+        desenharSpark();
+    }
+
+    function desenharSpark() {
+        var svg = document.getElementById('sparkVazao');
+        if (!svg) { return; }
+
+        var vals = SERIE.map(function (d) { return d.vazao; })
+                        .filter(function (v) { return v !== null && v !== undefined; });
+        if (vals.length < 2) { return; }
+
+        var L = 170, A = 40, pad = 3;
+        var min = Math.min.apply(null, vals);
+        var max = Math.max.apply(null, vals);
+        var amp = (max - min) || 1;
+
+        var pontos = vals.map(function (v, i) {
+            var x = (i / (vals.length - 1)) * L;
+            var y = A - pad - ((v - min) / amp) * (A - pad * 2);
+            return x.toFixed(1) + ',' + y.toFixed(1);
+        });
+
+        var area = 'M0,' + A + ' L' + pontos.join(' L') + ' L' + L + ',' + A + ' Z';
+
+        svg.innerHTML =
+            '<path d="' + area + '" fill="rgba(64,200,224,.16)"/>' +
+            '<polyline points="' + pontos.join(' ') + '" fill="none" stroke="' + COR.teal +
+            '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
+    }
+
+    /* ───────────── Barras dos tiles ───────────── */
+    function barras() {
+        document.querySelectorAll('.tile-bar span[data-fill]').forEach(function (bar) {
+            var pct = Math.max(Math.min(parseFloat(bar.dataset.fill) || 0, 100), 2);
+            if (!ANIMAR) { bar.style.width = pct + '%'; return; }
+            requestAnimationFrame(function () { bar.style.width = pct + '%'; });
+        });
+    }
+
+    /* ═══════════════ GRÁFICOS ═══════════════ */
+
+    if (!SERIE.length) {
+        entrada();
+        return;
+    }
+
+    var FONTE = { family: 'Plus Jakarta Sans, sans-serif', size: 11.5, color: COR.ink2 };
+
+    var CONFIG = {
+        responsive: true,
+        displaylogo: false,
+        modeBarButtonsToRemove: ['select2d', 'lasso2d', 'toggleSpikelines', 'hoverClosestCartesian', 'hoverCompareCartesian'],
+        toImageButtonOptions: { format: 'png', filename: 'sigua-grafico', scale: 2 }
+    };
+
+    var HOVER = {
+        bgcolor: 'rgba(16,20,28,.94)',
+        bordercolor: 'rgba(255,255,255,.14)',
+        font: { color: '#f5f7fa', family: 'Plus Jakarta Sans, sans-serif', size: 11.5 },
+        align: 'left'
+    };
+
+    function eixoX() {
+        return {
+            type: 'date',
+            gridcolor: COR.grade,
+            linecolor: COR.linha,
+            zeroline: false,
+            tickfont: { size: 10.5, color: COR.ink3 },
+            showspikes: true,
+            spikemode: 'across',
+            spikethickness: 1,
+            spikedash: 'dot',
+            spikecolor: 'rgba(255,255,255,.2)',
+            rangeslider: {
+                visible: true,
+                thickness: .1,
+                bgcolor: 'rgba(255,255,255,.03)',
+                bordercolor: COR.linha,
+                borderwidth: 1
+            }
+        };
+    }
+
+    var METRICAS = {
+        vazao: {
+            campo: 'vazao', nome: 'Vazão', unidade: 'L/s', casas: 1,
+            cor: COR.teal, fill: 'rgba(64,200,224,.16)', limite: null
+        },
+        turbidez: {
+            campo: 'turbidez', nome: 'Turbidez', unidade: 'NTU', casas: 2,
+            cor: COR.orange, fill: 'rgba(255,159,10,.15)', limite: LIMITE_TURBIDEZ
+        }
+    };
+
+    var estado = {
+        aba: 'vazao',
+        janela: 30,
+        vazao:    { tipo: 'area',  media: true },
+        turbidez: { tipo: 'linha', media: true, limite: true, bruta: false }
+    };
+
+    function fatia() {
+        return estado.janela > 0 ? SERIE.slice(-estado.janela) : SERIE.slice();
+    }
+
+    function num(v, casas) {
+        return (v === null || v === undefined) ? '—' : Number(v).toFixed(casas).replace('.', ',');
+    }
+
+    function montarStats(destino, metrica, dados) {
+        var m = METRICAS[metrica];
+        var el = document.getElementById(destino);
+
+        var vals = dados.map(function (d) { return d[m.campo]; })
+                        .filter(function (v) { return v !== null && v !== undefined; });
+
+        if (!vals.length) {
+            el.innerHTML = '<div class="strip-cell"><div class="strip-k">Sem dados nesta janela</div></div>';
+            return;
+        }
+
+        var soma = vals.reduce(function (a, b) { return a + b; }, 0);
+
+        var celulas = [
+            ['Último',   num(vals[vals.length - 1], m.casas),      m.unidade],
+            ['Média',    num(soma / vals.length, m.casas),         m.unidade],
+            ['Mínimo',   num(Math.min.apply(null, vals), m.casas), m.unidade],
+            ['Máximo',   num(Math.max.apply(null, vals), m.casas), m.unidade],
+            ['Leituras', String(vals.length),                      'na janela']
+        ];
+
+        if (m.limite !== null) {
+            var fora = vals.filter(function (v) { return v > m.limite; }).length;
+            celulas.push(['Acima do limite', String(fora), fora === 1 ? 'leitura' : 'leituras']);
+        }
+
+        el.innerHTML = celulas.map(function (c) {
+            return '<div class="strip-cell"><div class="strip-k">' + c[0] + '</div>' +
+                   '<div class="strip-v">' + c[1] + ' <small>' + c[2] + '</small></div></div>';
+        }).join('');
+    }
+
+    function desenharMetrica(metrica) {
+        var m = METRICAS[metrica];
+        var st = estado[metrica];
+        var dados = fatia();
+
+        var x = dados.map(function (d) { return d.x; });
+        var y = dados.map(function (d) { return d[m.campo]; });
+
+        var customdata = dados.map(function (d) {
+            return [
+                d.rotulo,
+                d.conforme ? 'Conforme' : 'Alerta',
+                num(d.turbidez, 2),
+                num(d.vazao, 1),
+                num(d.ph, 2),
+                num(d.cloro, 2)
+            ];
+        });
+
+        var hover =
+            '<b>%{customdata[0]}</b><br>' +
+            'Turbidez: %{customdata[2]} NTU<br>' +
+            'Vazão: %{customdata[3]} L/s<br>' +
+            'pH: %{customdata[4]} e cloro: %{customdata[5]} mg/L<br>' +
+            'Situação: %{customdata[1]}' +
+            '<extra></extra>';
+
+        var traces = [];
+
+        if (st.tipo === 'barras') {
+            traces.push({
+                x: x, y: y, type: 'bar',
+                name: m.nome + ' (' + m.unidade + ')',
+                marker: {
+                    color: y.map(function (v) {
+                        return (m.limite !== null && v !== null && v > m.limite) ? COR.red : m.cor;
+                    }),
+                    line: { width: 0 }
+                },
+                customdata: customdata, hovertemplate: hover
+            });
+        } else {
+            var principal = {
+                x: x, y: y, type: 'scatter',
+                mode: 'lines+markers',
+                name: m.nome + ' (' + m.unidade + ')',
+                line: { color: m.cor, width: 2.6, shape: 'spline', smoothing: .5 },
+                marker: { size: 6, color: '#0e1219', line: { color: m.cor, width: 2 } },
+                customdata: customdata, hovertemplate: hover
+            };
+            if (st.tipo === 'area') {
+                principal.fill = 'tozeroy';
+                principal.fillcolor = m.fill;
+            }
+            traces.push(principal);
+        }
+
+        /* Fora do limite: forma distinta, não só cor (acessibilidade) */
+        if (m.limite !== null) {
+            var foraX = [], foraY = [];
+            dados.forEach(function (d) {
+                var v = d[m.campo];
+                if (v !== null && v !== undefined && v > m.limite) {
+                    foraX.push(d.x);
+                    foraY.push(v);
+                }
+            });
+            if (foraX.length) {
+                traces.push({
+                    x: foraX, y: foraY, type: 'scatter', mode: 'markers',
+                    name: 'Acima do limite legal',
+                    marker: { symbol: 'diamond-open', size: 15, color: COR.red, line: { width: 2.4, color: COR.red } },
+                    hovertemplate: 'Acima do limite: %{y:.2f} NTU<extra></extra>'
+                });
+            }
+        }
+
+        if (metrica === 'turbidez' && st.bruta) {
+            traces.push({
+                x: x,
+                y: dados.map(function (d) { return d.turbidez_bruta; }),
+                type: 'scatter', mode: 'lines+markers',
+                name: 'Turbidez bruta (NTU)',
+                line: { color: COR.bruta, width: 1.9, dash: 'dot' },
+                marker: { size: 5, color: COR.bruta },
+                hovertemplate: 'Bruta: %{y:.1f} NTU<extra></extra>'
+            });
+        }
+
+        var shapes = [];
+        var annotations = [];
+        var vals = y.filter(function (v) { return v !== null && v !== undefined; });
+
+        if (st.media && vals.length) {
+            var media = vals.reduce(function (a, b) { return a + b; }, 0) / vals.length;
+            shapes.push({
+                type: 'line', xref: 'paper', x0: 0, x1: 1,
+                yref: 'y', y0: media, y1: media,
+                line: { color: 'rgba(255,255,255,.3)', width: 1.4, dash: 'dash' },
+                layer: 'below'
+            });
+            annotations.push({
+                xref: 'paper', x: .004, xanchor: 'left',
+                yref: 'y', y: media, yanchor: 'bottom',
+                text: 'média de ' + num(media, m.casas) + ' ' + m.unidade,
+                showarrow: false,
+                font: { size: 10, color: COR.ink2 },
+                bgcolor: 'rgba(8,11,18,.78)', borderpad: 3
+            });
+        }
+
+        if (m.limite !== null && st.limite) {
+            var pico = vals.length ? Math.max.apply(null, vals) : m.limite;
+            var topo = Math.max(m.limite * 1.25, pico * 1.12);
+            shapes.push({
+                type: 'rect', xref: 'paper', x0: 0, x1: 1,
+                yref: 'y', y0: m.limite, y1: topo,
+                fillcolor: 'rgba(255,69,58,.085)', line: { width: 0 }, layer: 'below'
+            });
+            shapes.push({
+                type: 'line', xref: 'paper', x0: 0, x1: 1,
+                yref: 'y', y0: m.limite, y1: m.limite,
+                line: { color: COR.red, width: 1.6 }, layer: 'below'
+            });
+            annotations.push({
+                xref: 'paper', x: .996, xanchor: 'right',
+                yref: 'y', y: m.limite, yanchor: 'bottom',
+                text: 'limite legal de ' + num(m.limite, 1) + ' ' + m.unidade,
+                showarrow: false,
+                font: { size: 10, color: '#ff9a93' },
+                bgcolor: 'rgba(8,11,18,.78)', borderpad: 3
+            });
+        }
+
+        var layout = {
+            margin: { t: 16, b: 16, l: 56, r: 20 },
+            paper_bgcolor: 'rgba(0,0,0,0)',
+            plot_bgcolor: 'rgba(255,255,255,.018)',
+            font: FONTE,
+            hovermode: 'x unified',
+            hoverlabel: HOVER,
+            dragmode: 'zoom',
+            showlegend: traces.length > 1,
+            legend: {
+                orientation: 'h', y: 1.16, x: 0,
+                font: { size: 11, color: COR.ink2 },
+                bgcolor: 'rgba(0,0,0,0)'
+            },
+            modebar: { bgcolor: 'rgba(0,0,0,0)', color: COR.ink3, activecolor: COR.teal },
+            shapes: shapes,
+            annotations: annotations,
+            xaxis: eixoX(),
+            yaxis: {
+                title: { text: m.nome + ' (' + m.unidade + ')', font: { color: m.cor, size: 11 }, standoff: 12 },
+                tickfont: { color: m.cor, size: 10.5 },
+                gridcolor: COR.grade,
+                linecolor: COR.linha,
+                zeroline: false
+            }
+        };
+
+        var div = document.getElementById(metrica === 'vazao' ? 'graficoVazao' : 'graficoTurbidez');
+
+        Plotly.react(div, traces, layout, CONFIG);
+        montarStats(metrica === 'vazao' ? 'statsVazao' : 'statsTurbidez', metrica, dados);
+        ligarClique(div);
+    }
+
+    function desenharComparacao() {
+        var dados = fatia();
+        var x = dados.map(function (d) { return d.x; });
+
+        var traces = [
+            {
+                x: x, y: dados.map(function (d) { return d.turbidez; }),
+                name: 'Turbidez (NTU)', type: 'scatter', mode: 'lines+markers',
+                line: { color: COR.orange, width: 2.6, shape: 'spline', smoothing: .5 },
+                marker: { size: 5.5, color: '#0e1219', line: { color: COR.orange, width: 2 } },
+                hovertemplate: 'Turbidez: %{y:.2f} NTU<extra></extra>'
+            },
+            {
+                x: x, y: dados.map(function (d) { return d.vazao; }),
+                name: 'Vazão (L/s)', type: 'scatter', mode: 'lines+markers',
+                yaxis: 'y2',
+                line: { color: COR.teal, width: 2.6, dash: 'dot' },
+                marker: { size: 5.5, color: '#0e1219', line: { color: COR.teal, width: 2 } },
+                hovertemplate: 'Vazão: %{y:.1f} L/s<extra></extra>'
+            }
+        ];
+
+        var layout = {
+            margin: { t: 16, b: 16, l: 56, r: 56 },
+            paper_bgcolor: 'rgba(0,0,0,0)',
+            plot_bgcolor: 'rgba(255,255,255,.018)',
+            font: FONTE,
+            hovermode: 'x unified',
+            hoverlabel: HOVER,
+            legend: {
+                orientation: 'h', y: 1.16, x: 0,
+                font: { size: 11, color: COR.ink2 },
+                bgcolor: 'rgba(0,0,0,0)'
+            },
+            modebar: { bgcolor: 'rgba(0,0,0,0)', color: COR.ink3, activecolor: COR.teal },
+            shapes: [{
+                type: 'line', xref: 'paper', x0: 0, x1: 1,
+                yref: 'y', y0: LIMITE_TURBIDEZ, y1: LIMITE_TURBIDEZ,
+                line: { color: COR.red, width: 1.4, dash: 'dash' }, layer: 'below'
+            }],
+            annotations: [{
+                xref: 'paper', x: .996, xanchor: 'right',
+                yref: 'y', y: LIMITE_TURBIDEZ, yanchor: 'bottom',
+                text: 'limite legal de 5,0 NTU',
+                showarrow: false,
+                font: { size: 10, color: '#ff9a93' },
+                bgcolor: 'rgba(8,11,18,.78)', borderpad: 3
+            }],
+            xaxis: eixoX(),
+            yaxis: {
+                title: { text: 'Turbidez (NTU)', font: { color: COR.orange, size: 11 }, standoff: 12 },
+                tickfont: { color: COR.orange, size: 10.5 },
+                gridcolor: COR.grade, linecolor: COR.linha, zeroline: false
+            },
+            yaxis2: {
+                title: { text: 'Vazão (L/s)', font: { color: COR.teal, size: 11 } },
+                tickfont: { color: COR.teal, size: 10.5 },
+                overlaying: 'y', side: 'right',
+                gridcolor: 'transparent', zeroline: false
+            }
+        };
+
+        var div = document.getElementById('graficoComparar');
+        Plotly.react(div, traces, layout, CONFIG);
+        ligarClique(div);
+    }
+
+    function desenhar(aba) {
+        if (aba === 'comparar') { desenharComparacao(); }
+        else { desenharMetrica(aba); }
+    }
+
+    /* ───────────── Clique no gráfico leva ao registro ───────────── */
+    function ligarClique(div) {
+        if (div.dataset.clique) { return; }
+        div.dataset.clique = '1';
+        div.on('plotly_click', function (ev) {
+            var ponto = fatia()[ev.points[0].pointIndex];
+            if (ponto) { destacar(ponto.id, ponto.rotulo); }
+        });
+    }
+
+    function destacar(id, rotulo) {
+        var corpo = document.getElementById('logBody');
+        var nota  = document.getElementById('logNote');
+        if (!corpo) { return; }
+
+        corpo.querySelectorAll('tr.hit').forEach(function (tr) { tr.classList.remove('hit'); });
+
+        var alvo = corpo.querySelector('tr[data-leitura-id="' + id + '"]');
+
+        if (alvo) {
+            alvo.classList.add('hit');
+            alvo.scrollIntoView({ behavior: CALMO ? 'auto' : 'smooth', block: 'center' });
+            nota.textContent = 'Leitura de ' + rotulo + ' destacada abaixo';
+        } else {
+            nota.textContent = 'A leitura de ' + rotulo + ' é anterior às dez exibidas aqui';
+        }
+    }
+
+    /* ───────────── Eventos ───────────── */
+    var segM = document.getElementById('segMetricas');
+    if (segM) {
+        segM.addEventListener('click', function (ev) {
+            var btn = ev.target.closest('.seg-btn');
+            if (!btn) { return; }
+
+            estado.aba = btn.dataset.tab;
+
+            this.querySelectorAll('.seg-btn').forEach(function (b) {
+                var on = (b === btn);
+                b.classList.toggle('active', on);
+                b.setAttribute('aria-selected', on ? 'true' : 'false');
+            });
+            document.querySelectorAll('.pane').forEach(function (p) {
+                p.classList.toggle('on', p.id === 'pane-' + estado.aba);
+            });
+
+            desenhar(estado.aba);
+        });
+    }
+
+    var segJ = document.getElementById('segJanela');
+    if (segJ) {
+        segJ.addEventListener('click', function (ev) {
+            var btn = ev.target.closest('.mini-btn');
+            if (!btn) { return; }
+
+            estado.janela = parseInt(btn.dataset.janela, 10);
+
+            this.querySelectorAll('.mini-btn').forEach(function (b) {
+                b.classList.toggle('active', b === btn);
+            });
+
+            desenhar(estado.aba);
+        });
+    }
+
+    document.querySelectorAll('[data-tipo-para]').forEach(function (grupo) {
+        grupo.addEventListener('click', function (ev) {
+            var btn = ev.target.closest('.mini-btn');
+            if (!btn) { return; }
+
+            var metrica = grupo.dataset.tipoPara;
+            estado[metrica].tipo = btn.dataset.tipo;
+
+            grupo.querySelectorAll('.mini-btn').forEach(function (b) {
+                b.classList.toggle('active', b === btn);
+            });
+
+            desenharMetrica(metrica);
+        });
+    });
+
+    document.querySelectorAll('.chip[data-toggle]').forEach(function (chip) {
+        chip.addEventListener('click', function () {
+            var metrica = chip.dataset.para;
+            var opcao   = chip.dataset.toggle;
+
+            estado[metrica][opcao] = !estado[metrica][opcao];
+            chip.classList.toggle('on', estado[metrica][opcao]);
+            chip.setAttribute('aria-pressed', estado[metrica][opcao] ? 'true' : 'false');
+
+            desenharMetrica(metrica);
+        });
+    });
+
+    document.querySelectorAll('.chip[data-acao="reset"]').forEach(function (chip) {
+        chip.addEventListener('click', function () {
+            var alvos = {
+                vazao:    'graficoVazao',
+                turbidez: 'graficoTurbidez',
+                comparar: 'graficoComparar'
+            };
+            var div = document.getElementById(alvos[chip.dataset.para]);
+            if (div) { Plotly.relayout(div, { 'xaxis.autorange': true, 'yaxis.autorange': true }); }
+        });
+    });
+
+    window.addEventListener('resize', function () {
+        var ativo = document.querySelector('.pane.on');
+        if (!ativo) { return; }
+        var div = ativo.querySelector('.js-plotly-plot');
+        if (div) { Plotly.Plots.resize(div); }
+    });
+
+    /* ───────────── Início ─────────────
+       Cada etapa roda isolada: se o indicador falhar em algum navegador,
+       os gráficos e o registro continuam funcionando. */
+    function etapa(nome, fn) {
+        try { fn(); }
+        catch (e) { console.error('SIGUÁ: falha ao montar ' + nome, e); }
+    }
+
+    etapa('a entrada', entrada);
+    etapa('o indicador de turbidez', indicador);
+    etapa('o cartão de vazão', liquido);
+    etapa('as barras dos tiles', barras);
+    etapa('os gráficos', function () { desenhar(estado.aba); });
+})();
 </script>
 </body>
 </html>
