@@ -524,6 +524,26 @@
         .bad-txt  { color: var(--red); }
         .none-txt { color: var(--ink-3); }
 
+        /* Valor de uma medição anterior. Fica em cinza, sem o verde/vermelho
+           de conformidade: o que esse número diz é o que foi medido antes,
+           não se a água está conforme agora. */
+        .old-txt  { color: var(--ink-2); }
+
+        .tile-when {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            margin-top: 7px;
+            padding: 3px 8px;
+            border-radius: 999px;
+            font-size: .68rem;
+            font-weight: 600;
+            color: var(--ink-2);
+            background: rgba(255,255,255,.06);
+            border: 1px solid var(--glass-edge);
+        }
+        .tile-when i { font-size: .64rem; opacity: .85; }
+
         /* ═══ Painel de gráficos ═══ */
         .chart-panel {
             padding: 24px 26px 20px;
@@ -718,6 +738,14 @@
 
         .tag-ok    { background: rgba(48,209,88,.14);  border-color: rgba(48,209,88,.28);  color: #7ee89b; }
         .tag-bad   { background: rgba(255,69,58,.14);  border-color: rgba(255,69,58,.3);   color: #ff9a93; }
+
+        /* Sem veredito: cinza neutro, nem verde nem vermelho. Pintar de
+           vermelho afirmaria um problema que ninguém constatou. */
+        .tag-nil {
+            background: rgba(255,255,255,.07);
+            border-color: var(--glass-edge);
+            color: var(--ink-2);
+        }
         .tag-trat  { background: rgba(10,132,255,.14); border-color: rgba(10,132,255,.28); color: #8fc6ff; }
         .tag-bruta { background: rgba(255,159,10,.14); border-color: rgba(255,159,10,.28); color: #ffce7a; }
 
@@ -917,7 +945,7 @@
                 <circle class="ring-arc" id="ringArc" cx="118" cy="118" r="94"/>
             </svg>
             <div class="ring-core">
-                <div class="ring-num" id="ringNum">0</div>
+                <div class="ring-num" id="ringNum">{{ amostras_realizadas }}</div>
                 <div class="ring-unit">de {{ amostras_exigidas }} amostras</div>
                 <div class="ring-cap">
                     {% if amostras_restantes %}
@@ -954,7 +982,7 @@
                 <div class="liquid-body">
                     <div class="liquid-label">Vazão tratada</div>
                     <div class="liquid-read">
-                        <span class="liquid-num" id="vazaoNum">0,0</span>
+                        <span class="liquid-num" id="vazaoNum">{% if fonte_vazao %}{{ fonte_vazao.vazao|floatformat:1 }}{% else %}—{% endif %}</span>
                         <span class="liquid-unit">L/s</span>
                     </div>
                     <div class="liquid-cap">
@@ -996,7 +1024,7 @@
                             <span class="tile-label">pH</span>
                             <span class="tile-ico"><i class="bi bi-activity" aria-hidden="true"></i></span>
                         </div>
-                        {% if ultima_leitura.ph %}
+                        {% if ultima_leitura.ph is not None %}
                             <div class="tile-num {% if ultima_leitura.ph >= 6.0 and ultima_leitura.ph <= 9.5 %}ok-txt{% else %}bad-txt{% endif %}">{{ ultima_leitura.ph|floatformat:2 }}</div>
                             <div class="tile-cap">
                                 {% if ultima_leitura.ph >= 6.0 and ultima_leitura.ph <= 9.5 %}Dentro da faixa de 6,0 a 9,5{% else %}Fora da faixa de 6,0 a 9,5{% endif %}
@@ -1005,9 +1033,16 @@
                                 <span data-fill="{% widthratio ultima_leitura.ph 14 100 %}"
                                       style="background: {% if ultima_leitura.ph >= 6.0 and ultima_leitura.ph <= 9.5 %}var(--green){% else %}var(--red){% endif %};"></span>
                             </div>
+                        {% elif ultimas_medidas.ph %}
+                            <div class="tile-num old-txt">{{ ultimas_medidas.ph.valor|floatformat:2 }}</div>
+                            <div class="tile-cap">Não medido nesta leitura</div>
+                            <div class="tile-when">
+                                <i class="bi bi-clock-history" aria-hidden="true"></i>
+                                Medido em {{ ultimas_medidas.ph.quando|date:"d/m/Y" }} às {{ ultimas_medidas.ph.quando|date:"H:i" }}
+                            </div>
                         {% else %}
                             <div class="tile-num none-txt">—</div>
-                            <div class="tile-cap">Não medido nesta leitura</div>
+                            <div class="tile-cap">Nunca medido</div>
                         {% endif %}
                     </div>
                 </div>
@@ -1018,16 +1053,23 @@
                             <span class="tile-label">Cloro residual</span>
                             <span class="tile-ico"><i class="bi bi-shield-check" aria-hidden="true"></i></span>
                         </div>
-                        {% if ultima_leitura.cloro_residual_mgl %}
+                        {% if ultima_leitura.cloro_residual_mgl is not None %}
                             <div class="tile-num {% if ultima_leitura.cloro_residual_mgl >= 0.2 and ultima_leitura.cloro_residual_mgl <= 5.0 %}ok-txt{% else %}bad-txt{% endif %}">{{ ultima_leitura.cloro_residual_mgl|floatformat:2 }}</div>
                             <div class="tile-cap">mg/L, entre 0,2 e 5,0 permitidos</div>
                             <div class="tile-bar">
                                 <span data-fill="{% widthratio ultima_leitura.cloro_residual_mgl 5 100 %}"
                                       style="background: {% if ultima_leitura.cloro_residual_mgl >= 0.2 and ultima_leitura.cloro_residual_mgl <= 5.0 %}var(--green){% else %}var(--red){% endif %};"></span>
                             </div>
+                        {% elif ultimas_medidas.cloro %}
+                            <div class="tile-num old-txt">{{ ultimas_medidas.cloro.valor|floatformat:2 }}</div>
+                            <div class="tile-cap">Não medido nesta leitura</div>
+                            <div class="tile-when">
+                                <i class="bi bi-clock-history" aria-hidden="true"></i>
+                                Medido em {{ ultimas_medidas.cloro.quando|date:"d/m/Y" }} às {{ ultimas_medidas.cloro.quando|date:"H:i" }}
+                            </div>
                         {% else %}
                             <div class="tile-num none-txt">—</div>
-                            <div class="tile-cap">Não medido nesta leitura</div>
+                            <div class="tile-cap">Nunca medido</div>
                         {% endif %}
                     </div>
                 </div>
@@ -1038,16 +1080,23 @@
                             <span class="tile-label">Cor aparente</span>
                             <span class="tile-ico"><i class="bi bi-palette" aria-hidden="true"></i></span>
                         </div>
-                        {% if ultima_leitura.cor_uh %}
+                        {% if ultima_leitura.cor_uh is not None %}
                             <div class="tile-num {% if ultima_leitura.cor_uh <= 15 %}ok-txt{% else %}bad-txt{% endif %}">{{ ultima_leitura.cor_uh|floatformat:1 }}</div>
                             <div class="tile-cap">uH, até 15 permitidos</div>
                             <div class="tile-bar">
                                 <span data-fill="{% widthratio ultima_leitura.cor_uh 15 100 %}"
                                       style="background: {% if ultima_leitura.cor_uh <= 15 %}var(--green){% else %}var(--red){% endif %};"></span>
                             </div>
+                        {% elif ultimas_medidas.cor %}
+                            <div class="tile-num old-txt">{{ ultimas_medidas.cor.valor|floatformat:1 }}</div>
+                            <div class="tile-cap">Não medido nesta leitura</div>
+                            <div class="tile-when">
+                                <i class="bi bi-clock-history" aria-hidden="true"></i>
+                                Medido em {{ ultimas_medidas.cor.quando|date:"d/m/Y" }} às {{ ultimas_medidas.cor.quando|date:"H:i" }}
+                            </div>
                         {% else %}
                             <div class="tile-num none-txt">—</div>
-                            <div class="tile-cap">Não medido nesta leitura</div>
+                            <div class="tile-cap">Nunca medido</div>
                         {% endif %}
                     </div>
                 </div>
@@ -1065,9 +1114,16 @@
                                 <span data-fill="{% widthratio ultima_leitura.turbidez_ntu 5 100 %}"
                                       style="background: {% if ultima_leitura.turbidez_ntu <= 5 %}var(--green){% else %}var(--red){% endif %};"></span>
                             </div>
+                        {% elif ultimas_medidas.turbidez %}
+                            <div class="tile-num old-txt">{{ ultimas_medidas.turbidez.valor|floatformat:2 }}</div>
+                            <div class="tile-cap">Não medido nesta leitura</div>
+                            <div class="tile-when">
+                                <i class="bi bi-clock-history" aria-hidden="true"></i>
+                                Medido em {{ ultimas_medidas.turbidez.quando|date:"d/m/Y" }} às {{ ultimas_medidas.turbidez.quando|date:"H:i" }}
+                            </div>
                         {% else %}
                             <div class="tile-num none-txt">—</div>
-                            <div class="tile-cap">Não medido nesta leitura</div>
+                            <div class="tile-cap">Nunca medido</div>
                         {% endif %}
                     </div>
                 </div>
@@ -1206,7 +1262,9 @@
                         <td>{% if leitura.cor_bruta_uh %}{{ leitura.cor_bruta_uh|floatformat:1 }}{% else %}<span class="nil">—</span>{% endif %}</td>
                         <td>{% if leitura.coliformes_ufc is not None %}{{ leitura.coliformes_ufc|floatformat:0 }}{% else %}<span class="nil">—</span>{% endif %}</td>
                         <td>
-                            {% if leitura.status_conformidade %}
+                            {% if leitura.status_conformidade is None %}
+                                <span class="tag tag-nil" title="Leitura sem parâmetro da portaria — nada a julgar">Não avaliada</span>
+                            {% elif leitura.status_conformidade %}
                                 <span class="tag tag-ok">Conforme</span>
                             {% else %}
                                 <span class="tag tag-bad">Alerta</span>
@@ -1481,6 +1539,13 @@
         }
     };
 
+    /* Como cada origem aparece no gráfico. O sensor é fluxo contínuo e
+       vira linha; o operador são aferições pontuais e viram losangos. */
+    var PORORIGEM = [
+        { chave: 'sensor',   nome: 'sensor',   modo: 'lines+markers', simbolo: 'circle' },
+        { chave: 'operador', nome: 'operador', modo: 'markers',       simbolo: 'diamond' }
+    ];
+
     var estado = {
         aba: 'vazao',
         janela: 30,
@@ -1540,11 +1605,12 @@
         var customdata = dados.map(function (d) {
             return [
                 d.rotulo,
-                d.conforme ? 'Conforme' : 'Alerta',
+                d.conforme === null ? 'Não avaliada' : (d.conforme ? 'Conforme' : 'Alerta'),
                 num(d.turbidez, 2),
                 num(d.vazao, 1),
                 num(d.ph, 2),
-                num(d.cloro, 2)
+                num(d.cloro, 2),
+                d.origem === 'sensor' ? 'sensor' : 'operador'
             ];
         });
 
@@ -1553,37 +1619,107 @@
             'Turbidez: %{customdata[2]} NTU<br>' +
             'Vazão: %{customdata[3]} L/s<br>' +
             'pH: %{customdata[4]} e cloro: %{customdata[5]} mg/L<br>' +
-            'Situação: %{customdata[1]}' +
+            'Situação: %{customdata[1]}<br>' +
+            'Medido por: %{customdata[6]}' +
             '<extra></extra>';
 
         var traces = [];
 
         if (st.tipo === 'barras') {
-            traces.push({
-                x: x, y: y, type: 'bar',
-                name: m.nome + ' (' + m.unidade + ')',
-                marker: {
-                    color: y.map(function (v) {
-                        return (m.limite !== null && v !== null && v > m.limite) ? COR.red : m.cor;
-                    }),
-                    line: { width: 0 }
-                },
-                customdata: customdata, hovertemplate: hover
+            /* Barras também separadas por origem, senão trocar de linha para
+               barra faria a distinção sumir sem aviso. */
+            PORORIGEM.forEach(function (o) {
+                var yOrigem = dados.map(function (d) {
+                    return d.origem === o.chave ? d[m.campo] : null;
+                });
+                if (!yOrigem.some(function (v) { return v !== null && v !== undefined; })) { return; }
+
+                traces.push({
+                    x: x, y: yOrigem, type: 'bar',
+                    name: m.nome + ' — ' + o.nome,
+                    marker: {
+                        /* Acima do limite continua vermelho, independentemente
+                           de quem mediu: o limite é da água, não da origem. */
+                        color: yOrigem.map(function (v) {
+                            return (m.limite !== null && v !== null && v > m.limite) ? COR.red : m.cor;
+                        }),
+                        opacity: o.chave === 'operador' ? 1 : .78,
+                        line: { width: 0 }
+                    },
+                    customdata: customdata, hovertemplate: hover
+                });
             });
-        } else {
-            var principal = {
-                x: x, y: y, type: 'scatter',
-                mode: 'lines+markers',
-                name: m.nome + ' (' + m.unidade + ')',
-                line: { color: m.cor, width: 2.6, shape: 'spline', smoothing: .5 },
-                marker: { size: 6, color: '#0e1219', line: { color: m.cor, width: 2 } },
-                customdata: customdata, hovertemplate: hover
-            };
-            if (st.tipo === 'area') {
-                principal.fill = 'tozeroy';
-                principal.fillcolor = m.fill;
+
+            if (!traces.length) {
+                traces.push({
+                    x: x, y: x.map(function () { return null; }), type: 'bar',
+                    name: m.nome + ' (' + m.unidade + ')',
+                    marker: { color: m.cor, line: { width: 0 } },
+                    hoverinfo: 'skip'
+                });
             }
-            traces.push(principal);
+        } else {
+            /* Uma curva por origem, em vez de uma curva só.
+               O sensor mede a cada 30 min e o operador a cada 2 h; na mesma
+               linha, a aferição manual some no meio do fluxo contínuo e não
+               dá para ver se o sensor começou a divergir dela.
+
+               Origem que não tem nenhum valor desta métrica não vira curva:
+               vazão só o sensor mede, pH e cloro só o operador. Assim nunca
+               aparece uma legenda apontando para uma linha vazia. */
+            PORORIGEM.forEach(function (o) {
+                var temAlgum = dados.some(function (d) {
+                    return d.origem === o.chave &&
+                           d[m.campo] !== null && d[m.campo] !== undefined;
+                });
+                if (!temAlgum) { return; }
+
+                var trace = {
+                    x: x,
+                    /* Mantém o eixo x inteiro e anula o que é da outra
+                       origem: assim as duas curvas ficam alinhadas no tempo
+                       e o hover unificado continua casando os pontos. */
+                    y: dados.map(function (d) {
+                        return d.origem === o.chave ? d[m.campo] : null;
+                    }),
+                    type: 'scatter',
+                    mode: o.modo,
+                    name: m.nome + ' — ' + o.nome,
+                    customdata: customdata, hovertemplate: hover
+                };
+
+                if (o.modo === 'markers') {
+                    /* Operador: pontos avulsos, com forma própria. Quem não
+                       distingue cor ainda separa as duas pelo símbolo. */
+                    trace.marker = {
+                        size: 10, symbol: o.simbolo, color: m.cor,
+                        line: { color: '#0e1219', width: 1.6 }
+                    };
+                } else {
+                    trace.line = { color: m.cor, width: 2.6, shape: 'spline', smoothing: .5 };
+                    trace.marker = { size: 6, color: '#0e1219', line: { color: m.cor, width: 2 } };
+                    trace.connectgaps = true;
+                    if (st.tipo === 'area') {
+                        trace.fill = 'tozeroy';
+                        trace.fillcolor = m.fill;
+                    }
+                }
+                traces.push(trace);
+            });
+
+            /* Nenhuma origem mediu esta métrica na janela. Sem nenhuma
+               curva o Plotly desenha uma caixa vazia, sem eixo nem escala;
+               uma curva vazia mantém o gráfico legível e o nome da métrica
+               visível, deixando claro que falta dado e não que quebrou. */
+            if (!traces.length) {
+                traces.push({
+                    x: x, y: x.map(function () { return null; }),
+                    type: 'scatter', mode: 'lines',
+                    name: m.nome + ' (' + m.unidade + ')',
+                    line: { color: m.cor, width: 2.6 },
+                    hoverinfo: 'skip'
+                });
+            }
         }
 
         /* Fora do limite: forma distinta, não só cor (acessibilidade) */
@@ -1701,23 +1837,45 @@
         var dados = fatia();
         var x = dados.map(function (d) { return d.x; });
 
-        var traces = [
-            {
-                x: x, y: dados.map(function (d) { return d.turbidez; }),
-                name: 'Turbidez (NTU)', type: 'scatter', mode: 'lines+markers',
-                line: { color: COR.orange, width: 2.6, shape: 'spline', smoothing: .5 },
-                marker: { size: 5.5, color: '#0e1219', line: { color: COR.orange, width: 2 } },
-                hovertemplate: 'Turbidez: %{y:.2f} NTU<extra></extra>'
-            },
-            {
-                x: x, y: dados.map(function (d) { return d.vazao; }),
-                name: 'Vazão (L/s)', type: 'scatter', mode: 'lines+markers',
-                yaxis: 'y2',
-                line: { color: COR.teal, width: 2.6, dash: 'dot' },
-                marker: { size: 5.5, color: '#0e1219', line: { color: COR.teal, width: 2 } },
-                hovertemplate: 'Vazão: %{y:.1f} L/s<extra></extra>'
+        var traces = [];
+
+        /* Turbidez: os dois medem, então as duas curvas aparecem — é aqui
+           que dá para ver o sensor divergindo da aferição do operador. */
+        PORORIGEM.forEach(function (o) {
+            var temAlgum = dados.some(function (d) {
+                return d.origem === o.chave && d.turbidez !== null && d.turbidez !== undefined;
+            });
+            if (!temAlgum) { return; }
+
+            var t = {
+                x: x,
+                y: dados.map(function (d) {
+                    return d.origem === o.chave ? d.turbidez : null;
+                }),
+                name: 'Turbidez — ' + o.nome, type: 'scatter', mode: o.modo,
+                hovertemplate: 'Turbidez (' + o.nome + '): %{y:.2f} NTU<extra></extra>'
+            };
+            if (o.modo === 'markers') {
+                t.marker = { size: 10, symbol: o.simbolo, color: COR.orange,
+                             line: { color: '#0e1219', width: 1.6 } };
+            } else {
+                t.line = { color: COR.orange, width: 2.6, shape: 'spline', smoothing: .5 };
+                t.marker = { size: 5.5, color: '#0e1219', line: { color: COR.orange, width: 2 } };
+                t.connectgaps = true;
             }
-        ];
+            traces.push(t);
+        });
+
+        /* Vazão vem só da calha, então não há o que separar — mas o nome diz
+           de onde veio, para a legenda não sugerir que o operador a mediu. */
+        traces.push({
+            x: x, y: dados.map(function (d) { return d.vazao; }),
+            name: 'Vazão — sensor (L/s)', type: 'scatter', mode: 'lines+markers',
+            yaxis: 'y2', connectgaps: true,
+            line: { color: COR.teal, width: 2.6, dash: 'dot' },
+            marker: { size: 5.5, color: '#0e1219', line: { color: COR.teal, width: 2 } },
+            hovertemplate: 'Vazão: %{y:.1f} L/s<extra></extra>'
+        });
 
         var layout = {
             margin: { t: 16, b: 16, l: 56, r: 56 },

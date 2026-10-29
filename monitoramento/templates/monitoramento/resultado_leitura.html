@@ -161,6 +161,10 @@
         }
         .selo-ok  { background: rgba(48,209,88,.14); border: 1px solid rgba(48,209,88,.3); color: #7ee89b; }
         .selo-bad { background: rgba(255,69,58,.14); border: 1px solid rgba(255,69,58,.32); color: #ff9a93; }
+
+        /* Sem veredito: cinza neutro, nem verde nem vermelho. */
+        .selo-nil { background: rgba(255,255,255,.07); border-color: var(--glass-edge); color: var(--ink-2); }
+        .selo-nil .selo-dot { background: var(--ink-3); box-shadow: none; }
         .selo-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
         .selo-ok  .selo-dot { background: var(--green); }
         .selo-bad .selo-dot { background: var(--red); }
@@ -295,6 +299,7 @@
         }
         .tag-ok  { background: rgba(48,209,88,.14); border-color: rgba(48,209,88,.28); color: #7ee89b; }
         .tag-bad { background: rgba(255,69,58,.14); border-color: rgba(255,69,58,.3);  color: #ff9a93; }
+        .tag-nil { background: rgba(255,255,255,.07); border-color: var(--glass-edge); color: var(--ink-2); }
 
         /* ═══ Formulário de feedback ═══ */
         .fb-label {
@@ -415,6 +420,73 @@
             * { animation-duration: .001ms !important; animation-iteration-count: 1 !important; }
         }
 
+        /* ═══ Aviso rápido (toast) ═══
+           Some sozinho por animação de CSS, não por JavaScript: assim
+           funciona igual se o script falhar ou estiver desligado. Um aviso
+           que depende de JS para sumir é um aviso que pode ficar preso na
+           tela para sempre. */
+        .toast-ok {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            max-width: min(380px, calc(100vw - 40px));
+            padding: 14px 18px;
+            border-radius: 14px;
+            font-size: .88rem;
+            font-weight: 600;
+            color: #7ee89b;
+            background: rgba(20, 44, 30, .92);
+            border: 1px solid rgba(48, 209, 88, .34);
+            box-shadow: 0 16px 40px rgba(0, 0, 0, .45);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            animation: toast-vida 5s var(--ease-out) forwards;
+        }
+
+        .toast-ok i { font-size: 1.1rem; flex-shrink: 0; }
+
+        .toast-erro {
+            color: #ff9a93;
+            background: rgba(52, 22, 20, .92);
+            border-color: rgba(255, 69, 58, .34);
+        }
+
+        /* Entra, fica legível por ~4 s e sai. O visibility no fim tira o
+           elemento do caminho do clique, que o opacity sozinho não faz. */
+        @keyframes toast-vida {
+              0%  { opacity: 0; transform: translateY(-14px) scale(.97); }
+              7%  { opacity: 1; transform: translateY(0) scale(1); }
+             85%  { opacity: 1; transform: translateY(0) scale(1); }
+            100%  { opacity: 0; transform: translateY(-10px) scale(.98); visibility: hidden; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            /* Sem deslize, e mais tempo na tela: quem pediu menos movimento
+               costuma precisar de mais tempo para ler. */
+            .toast-ok {
+                animation: toast-vida-calmo 8s linear forwards;
+            }
+            @keyframes toast-vida-calmo {
+                  0% { opacity: 0; }
+                  4% { opacity: 1; }
+                 93% { opacity: 1; }
+                100% { opacity: 0; visibility: hidden; }
+            }
+        }
+
+        @media (max-width: 575.98px) {
+            .toast-ok {
+                top: 12px;
+                right: 12px;
+                left: 12px;
+                max-width: none;
+            }
+        }
+
         .js .veredito, .js .painel, .js .sug { opacity: 0; }
     </style>
 </head>
@@ -468,19 +540,30 @@
 <!-- ═══ CONTEÚDO ═══ -->
 <main class="shell">
 
+    {% if messages %}
+        {% for m in messages %}
+        <div class="toast-ok{% if m.tags == 'error' %} toast-erro{% endif %}" role="status" aria-live="polite">
+            <i class="bi {% if m.tags == 'error' %}bi-exclamation-triangle-fill{% else %}bi-check-circle-fill{% endif %}" aria-hidden="true"></i>
+            <span>{{ m }}</span>
+        </div>
+        {% endfor %}
+    {% endif %}
+
     <a href="{% url 'dashboard' %}" class="crumb">
         <i class="bi bi-arrow-left" aria-hidden="true"></i> Voltar ao dashboard
     </a>
 
     <!-- ─── Veredito ─── -->
     <section class="veredito glass" id="veredito">
-        <div class="selo {% if leitura.status_conformidade %}selo-ok{% else %}selo-bad{% endif %}">
+        <div class="selo {% if leitura.status_conformidade is None %}selo-nil{% elif leitura.status_conformidade %}selo-ok{% else %}selo-bad{% endif %}">
             <span class="selo-dot"></span>
-            {% if leitura.status_conformidade %}Conforme{% else %}Fora do padrão{% endif %}
+            {% if leitura.status_conformidade is None %}Não avaliada{% elif leitura.status_conformidade %}Conforme{% else %}Fora do padrão{% endif %}
         </div>
 
         <h1 class="veredito-h">
-            {% if leitura.status_conformidade %}
+            {% if leitura.status_conformidade is None %}
+                Leitura sem parâmetro de potabilidade
+            {% elif leitura.status_conformidade %}
                 Leitura dentro do padrão de potabilidade
             {% else %}
                 Leitura fora do padrão de potabilidade
@@ -488,13 +571,19 @@
         </h1>
 
         <p class="veredito-p">
-            {% if tem_critico %}
-                O sistema identificou parâmetros fora do limite nesta coleta. Veja as recomendações
-                ao lado e acione o responsável técnico se for o caso.
+            {% if leitura.status_conformidade is None %}
+                Esta coleta trouxe apenas medições de calha e não inclui nenhum parâmetro
+                da portaria, então não há o que julgar. Registre cor, turbidez, cloro, pH
+                ou coliformes para que a conformidade seja avaliada.
             {% else %}
-                Nenhum parâmetro crítico foi identificado nesta coleta.
+                {% if tem_critico %}
+                    O sistema identificou parâmetros fora do limite nesta coleta. Veja as recomendações
+                    ao lado e acione o responsável técnico se for o caso.
+                {% else %}
+                    Nenhum parâmetro crítico foi identificado nesta coleta.
+                {% endif %}
+                Avaliada segundo a Portaria GM/MS nº 888/2021.
             {% endif %}
-            Avaliada segundo a Portaria GM/MS nº 888/2021.
         </p>
 
         <div class="meta-linha">
@@ -698,7 +787,9 @@
                 <div class="dados-grupo">Conformidade</div>
                 <div class="dado">
                     <span>Portaria 888/2021</span>
-                    {% if leitura.status_conformidade %}
+                    {% if leitura.status_conformidade is None %}
+                        <span class="tag tag-nil">Não avaliada</span>
+                    {% elif leitura.status_conformidade %}
                         <span class="tag tag-ok">Conforme</span>
                     {% else %}
                         <span class="tag tag-bad">Não conforme</span>

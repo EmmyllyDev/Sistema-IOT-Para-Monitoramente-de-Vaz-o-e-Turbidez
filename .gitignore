@@ -9,3 +9,6 @@ monitoramento/ia/modelo_treinado.pkl
 .env.backup-antes-deploy
 staticfiles/
 db.sqlite3
+
+# Token do sensor e senha do Wi-Fi do firmware
+firmware/esp32_sigua/credenciais.h

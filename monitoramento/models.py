@@ -99,7 +99,12 @@ class LeituraSensor(models.Model):
     ponto_coleta = models.CharField(verbose_name="Ponto de Coleta", max_length=100, null=True, blank=True)
     operador     = models.CharField(verbose_name="Operador", max_length=150, null=True, blank=True)
 
-    status_conformidade = models.BooleanField(verbose_name="Dentro da Portaria 888?")
+    # Nulo significa "não avaliada": a leitura não trouxe nenhum parâmetro
+    # da portaria. É o caso das leituras do sensor, que mandam só nível e
+    # turbidez. Marcar isso como False diria que a água está fora do padrão,
+    # que é afirmação diferente de "não dá para saber".
+    status_conformidade = models.BooleanField(
+        verbose_name="Dentro da Portaria 888?", null=True, blank=True)
     horario = models.DateTimeField(verbose_name="Horário da Leitura")
 
     # Feedback do operador — também alimenta o ML
@@ -111,4 +116,8 @@ class LeituraSensor(models.Model):
         db_table = 'leituras_sigua'
 
     def __str__(self):
-        return f"Turbidez: {self.turbidez_ntu} | Status: {'✅ OK' if self.status_conformidade else '❌ ALERTA'}"
+        if self.status_conformidade is None:
+            selo = '— não avaliada'
+        else:
+            selo = '✅ OK' if self.status_conformidade else '❌ ALERTA'
+        return f"Turbidez: {self.turbidez_ntu} | Status: {selo}"

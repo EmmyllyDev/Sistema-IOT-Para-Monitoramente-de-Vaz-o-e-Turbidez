@@ -72,12 +72,17 @@ def avaliar_parametros(dados):
 
 
 def calcular_conformidade(dados):
-    """Conforme quando há ao menos um parâmetro medido e nenhum fora do limite.
+    """True, False, ou None quando a leitura não permite julgar.
 
-    Uma leitura sem nenhum parâmetro medido não pode ser declarada conforme.
+    None é o caso das leituras do sensor, que trazem só nível e turbidez
+    da calha: sem nenhum parâmetro da portaria medido, não existe veredito.
+    Devolver False ali afirmaria que a água está fora do padrão — coisa
+    diferente de "não dá para saber" — e encheria o painel de alerta falso.
     """
     medidos = [p for p in avaliar_parametros(dados) if p['conforme'] is not None]
-    return bool(medidos) and all(p['conforme'] for p in medidos)
+    if not medidos:
+        return None
+    return all(p['conforme'] for p in medidos)
 
 
 def _horario_da_leitura(enviado):
@@ -192,6 +197,10 @@ def dashboard(request):
             'id': l.id,
             'x': l.horario.strftime('%Y-%m-%d %H:%M:%S'),
             'rotulo': l.horario.strftime('%d/%m/%Y %H:%M'),
+            # Os gráficos separam as curvas por quem mediu: o sensor mede de
+            # 30 em 30 min e o operador de 2 em 2 horas. Numa curva só, não
+            # dá para ver se o sensor começou a divergir da aferição manual.
+            'origem': l.origem,
             'turbidez': l.turbidez_ntu,
             'turbidez_bruta': l.turbidez_bruta_ntu,
             'vazao': l.vazao_ls,
@@ -229,10 +238,49 @@ def dashboard(request):
         fonte_vazao and serie and fonte_vazao['id'] != serie[-1]['id']
     )
 
+    # Última medição de cada parâmetro dos tiles.
+    #
+    # O sensor manda turbidez a cada 30 min e o operador os outros
+    # parâmetros a cada 2 horas, então a leitura mais recente quase sempre
+    # é do sensor e não tem pH, cloro nem cor. Mostrar só um travessão aí
+    # esconde uma informação que existe. A busca é no banco inteiro, e não
+    # nas 30 leituras do gráfico, senão um fim de semana sem operador
+    # bastaria para o valor sumir.
+    TILES = [
+        ('ph',        'ph'),
+        ('cloro',     'cloro_residual_mgl'),
+        ('cor',       'cor_uh'),
+        ('turbidez',  'turbidez_ntu'),
+    ]
+    ultimas_medidas = {}
+    for chave, campo in TILES:
+        anterior = (LeituraSensor.objects
+                    .exclude(horario=None)
+                    .exclude(**{campo: None})
+                    .order_by('-horario')
+                    .values('id', 'horario', campo)
+                    .first())
+        if anterior:
+            ultimas_medidas[chave] = {
+                'valor': anterior[campo],
+                'quando': anterior['horario'],
+                # Serve para o tile saber se o valor é da leitura atual ou
+                # de uma anterior, e só colorir por conformidade no primeiro
+                # caso: um valor velho pintado de verde seria lido como
+                # "está conforme agora", que é o que não se sabe.
+                'atual': bool(ultima_leitura and anterior['id'] == ultima_leitura.id),
+            }
+
+    # Leituras sem veredito (só nível/turbidez do sensor) ficam fora da
+    # conta: incluí-las como alerta inventaria problema que não houve, e
+    # incluí-las como conformes inventaria garantia que ninguém deu.
     total = len(serie)
-    conformes = sum(1 for p in serie if p['conforme'])
-    alertas = total - conformes
-    taxa_conformidade = round(conformes / total * 100, 1) if total else None
+    avaliadas = [p for p in serie if p['conforme'] is not None]
+    conformes = sum(1 for p in avaliadas if p['conforme'])
+    alertas = len(avaliadas) - conformes
+    nao_avaliadas = total - len(avaliadas)
+    taxa_conformidade = (round(conformes / len(avaliadas) * 100, 1)
+                         if avaliadas else None)
 
     # Controle de amostragem: quantas amostras foram feitas no período
     # contra a meta da portaria.
@@ -301,6 +349,7 @@ def dashboard(request):
         'nivel_maximo_cm': NIVEL_MAXIMO_CM,
         'fonte_vazao': fonte_vazao,
         'fonte_vazao_antiga': fonte_vazao_antiga,
+        'ultimas_medidas': ultimas_medidas,
         'resumo_json': json.dumps({
             'turbidez': resumo_turbidez,
             'vazao': resumo_vazao,
@@ -310,6 +359,8 @@ def dashboard(request):
         }),
         'total_leituras': total,
         'conformes': conformes,
+        'avaliadas': len(avaliadas),
+        'nao_avaliadas': nao_avaliadas,
         'alertas': alertas,
         'taxa_conformidade': taxa_conformidade,
     }
@@ -419,8 +470,12 @@ def registrar_feedback(request, pk):
     leitura.observacao_operador = request.POST.get('observacao_operador', '').strip() or None
     leitura.save()
 
+    # Volta para a própria leitura, não para o dashboard: é ali que o
+    # feedback acabou de ser gravado e é ali que ele faz sentido. Mandar
+    # para o dashboard, que não renderiza mensagens, fazia o aviso ficar
+    # guardado na sessão e aparecer depois na tela de nova leitura.
     messages.success(request, 'Feedback registrado com sucesso.')
-    return redirect('dashboard')
+    return redirect('resultado_leitura', pk=pk)
 
 
 # ── Campos exibidos no relatório ────────────────────────────
@@ -654,11 +709,22 @@ def relatorio(request):
     ano      = request.GET.get('ano', str(agora.year))
     operador = request.GET.get('operador', '').strip()
 
+    # Origem: vazio é "todas". Validado contra as opções do modelo para que
+    # um valor inventado na URL não vire um filtro silencioso que devolve
+    # zero linhas sem explicar por quê.
+    origem = request.GET.get('origem', '').strip()
+    if origem not in dict(LeituraSensor.ORIGEM_CHOICES):
+        origem = ''
+
     if ano and ano.isdigit():
         qs = qs.filter(horario__year=int(ano))
     if mes and mes.isdigit():
         qs = qs.filter(horario__month=int(mes))
-    if operador:
+    if origem:
+        qs = qs.filter(origem=origem)
+    # O nome só existe na coleta do operador; aplicá-lo com origem=sensor
+    # zeraria tudo e pareceria falha do filtro, não consequência dele.
+    if operador and origem != LeituraSensor.ORIGEM_SENSOR:
         qs = qs.filter(operador__icontains=operador)
 
     # Médias do período filtrado
@@ -672,6 +738,9 @@ def relatorio(request):
     # Total e conformidade
     total = qs.count()
     conformes = qs.filter(status_conformidade=True).count()
+    # Só as que têm veredito entram na proporção de conformidade.
+    avaliadas = qs.exclude(status_conformidade=None).count()
+    nao_avaliadas = total - avaliadas
 
     # Média de amostras por mês
     meses_com_dados = qs.dates('horario', 'month').count()
@@ -690,8 +759,25 @@ def relatorio(request):
         (9,'Setembro'),(10,'Outubro'),(11,'Novembro'),(12,'Dezembro'),
     ]
 
+    # Duas tabelas, porque são duas coletas diferentes. O operador registra
+    # de 2 em 2 horas e preenche os parâmetros da portaria; o sensor manda
+    # de 30 em 30 minutos e traz só calha e turbidez. Misturados numa grade
+    # só, o sensor responde por 80% das linhas e as coletas do operador —
+    # que é o que o órgão fiscaliza — ficam soterradas entre travessões.
+    #
+    # O corte por origem é feito na consulta, não numa lista já fatiada:
+    # fatiar antes faria a tabela do operador encolher justamente nos
+    # períodos em que o sensor mandou mais.
+    leituras_operador = qs.filter(origem=LeituraSensor.ORIGEM_OPERADOR)
+    leituras_sensor = qs.filter(origem=LeituraSensor.ORIGEM_SENSOR)
+    total_operador = leituras_operador.count()
+    total_sensor = leituras_sensor.count()
+
     return render(request, 'monitoramento/relatorio.html', {
-        'leituras':      qs[:500],
+        'leituras_operador': leituras_operador[:500],
+        'leituras_sensor':   leituras_sensor[:500],
+        'total_operador':    total_operador,
+        'total_sensor':      total_sensor,
         'medias':        medias,
         'campos':        CAMPOS_RELATORIO,
         'colunas_tratada': COLUNAS_TRATADA,
@@ -701,10 +787,13 @@ def relatorio(request):
         'meta_amostras': AMOSTRAS_EXIGIDAS,
         'total':         total,
         'conformes':     conformes,
+        'avaliadas':     avaliadas,
+        'nao_avaliadas': nao_avaliadas,
         'media_mes':     media_mes,
         'mes_sel':       mes,
         'ano_sel':       ano,
         'operador_sel':  operador,
+        'origem_sel':    origem,
         'anos':          anos,
         'meses':         meses,
         'campos_media':  CAMPOS_MEDIA,
@@ -719,11 +808,19 @@ def exportar_csv(request):
     ano      = request.GET.get('ano', '')
     operador = request.GET.get('operador', '').strip()
 
+    # Mesmas regras do relatório: o CSV tem que trazer exatamente o que
+    # está na tela, senão o arquivo contradiz o que a pessoa acabou de ver.
+    origem = request.GET.get('origem', '').strip()
+    if origem not in dict(LeituraSensor.ORIGEM_CHOICES):
+        origem = ''
+
     if ano and ano.isdigit():
         qs = qs.filter(horario__year=int(ano))
     if mes and mes.isdigit():
         qs = qs.filter(horario__month=int(mes))
-    if operador:
+    if origem:
+        qs = qs.filter(origem=origem)
+    if operador and origem != LeituraSensor.ORIGEM_SENSOR:
         qs = qs.filter(operador__icontains=operador)
 
     response = HttpResponse(content_type='text/csv; charset=utf-8')
@@ -746,7 +843,10 @@ def exportar_csv(request):
             elif campo == 'tipo_reservatorio':
                 val = l.get_tipo_reservatorio_display() or ''
             elif campo == 'status_conformidade':
-                val = 'Conforme' if val else 'Não conforme'
+                # Nulo é "não avaliada": escrever "Não conforme" aqui faria
+                # a planilha afirmar um problema que ninguém constatou.
+                val = ('Não avaliada' if val is None
+                       else ('Conforme' if val else 'Não conforme'))
             elif val is None:
                 val = ''
             linha.append(val)
@@ -761,9 +861,15 @@ def exportar_csv(request):
             val = medias[campo]
             media_linha.append(val if val is not None else '')
         elif campo == 'status_conformidade':
-            total = qs.count()
+            # A proporção é sobre as leituras avaliadas, não sobre o total:
+            # as do sensor não trazem parâmetro da portaria e não entram.
+            avaliadas = qs.exclude(status_conformidade=None).count()
             conformes = qs.filter(status_conformidade=True).count()
-            media_linha.append(f'{conformes}/{total} conformes')
+            nao_avaliadas = qs.count() - avaliadas
+            texto = f'{conformes}/{avaliadas} conformes'
+            if nao_avaliadas:
+                texto += f' ({nao_avaliadas} não avaliadas)'
+            media_linha.append(texto)
         else:
             media_linha.append('')
     writer.writerow(media_linha)

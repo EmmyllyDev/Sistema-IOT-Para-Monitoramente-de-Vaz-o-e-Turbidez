@@ -253,6 +253,13 @@
             color: var(--ink-2); margin-bottom: 7px;
         }
 
+        .filtro-nota {
+            display: block;
+            margin-top: 5px;
+            font-size: .7rem;
+            color: var(--ink-3);
+        }
+
         .filtros select, .filtros input[type="text"] {
             width: 100%; height: 46px;
             padding: 0 14px;
@@ -274,6 +281,27 @@
 
         /* ═══ Tabela ═══ */
         .tabela-painel { padding: 6px; border-radius: var(--r-lg); opacity: 0; overflow: hidden; }
+
+        /* Cabeçalho de seção — mesmas medidas do dashboard, para as duas
+           tabelas (operador e sensor) lerem como parte do mesmo sistema. */
+        .sec-head {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin: 44px 0 16px;
+        }
+
+        .sec-title {
+            font-size: 1.14rem;
+            font-weight: 700;
+            letter-spacing: -.025em;
+        }
+
+        .sec-title i { font-size: .95rem; color: var(--ink-2); margin-right: 6px; }
+
+        .sec-note { font-size: .8rem; color: var(--ink-3); }
 
         .rolagem { overflow-x: auto; border-radius: var(--r-md); }
 
@@ -338,6 +366,9 @@
         }
         .tag-ok  { background: rgba(48,209,88,.14); border-color: rgba(48,209,88,.28); color: #7ee89b; }
         .tag-bad { background: rgba(255,69,58,.14); border-color: rgba(255,69,58,.3);  color: #ff9a93; }
+
+        /* Sem veredito: cinza neutro. Ver comentário no dashboard. */
+        .tag-nil { background: rgba(255,255,255,.07); border-color: var(--glass-edge); color: var(--ink-2); }
         .tag-res { background: rgba(255,255,255,.06); border-color: var(--glass-edge); color: var(--ink-2); }
 
         .nil { color: var(--ink-3); opacity: .5; }
@@ -440,7 +471,7 @@
             <h1 class="topo-h">Relatório de leituras</h1>
             <p class="topo-p">Parâmetros de potabilidade da água bruta e tratada, segundo a Portaria GM/MS nº 888/2021.</p>
         </div>
-        <a href="{% url 'exportar_csv' %}?mes={{ mes_sel }}&ano={{ ano_sel }}&operador={{ operador_sel|urlencode }}"
+        <a href="{% url 'exportar_csv' %}?mes={{ mes_sel }}&ano={{ ano_sel }}&operador={{ operador_sel|urlencode }}&origem={{ origem_sel }}"
            class="btn-s btn-s-fill">
             <i class="bi bi-download" aria-hidden="true"></i> Exportar CSV
         </a>
@@ -459,9 +490,11 @@
             <div class="kpi glass">
                 <div class="kpi-label">Em conformidade</div>
                 <div class="kpi-valor" style="color: var(--green);">
-                    {{ conformes }}{% if total %}<span class="kpi-pct">de {{ total }}</span>{% endif %}
+                    {{ conformes }}{% if avaliadas %}<span class="kpi-pct">de {{ avaliadas }}</span>{% endif %}
                 </div>
-                <div class="kpi-sub">dentro dos limites da portaria</div>
+                <div class="kpi-sub">
+                    dentro dos limites da portaria{% if nao_avaliadas %}<br>{{ nao_avaliadas }} sem parâmetro para avaliar{% endif %}
+                </div>
             </div>
         </div>
 
@@ -523,11 +556,25 @@
                     {% endfor %}
                 </select>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-2">
+                <label class="filtro-label" for="f_origem">Origem</label>
+                <select name="origem" id="f_origem">
+                    <option value="">Todas</option>
+                    <option value="operador" {% if origem_sel == 'operador' %}selected{% endif %}>Operador</option>
+                    <option value="sensor" {% if origem_sel == 'sensor' %}selected{% endif %}>Sensor</option>
+                </select>
+            </div>
+            <div class="col-md-3" id="campoOperador">
                 <label class="filtro-label" for="f_op">Operador</label>
                 <input type="text" name="operador" id="f_op" placeholder="Filtrar por nome" value="{{ operador_sel }}">
+                {# Sem JS o campo continua visível e utilizável; a view já #}
+                {# ignora o nome quando a origem é sensor, então o filtro  #}
+                {# nunca devolve zero linhas por um motivo invisível.      #}
+                <span class="filtro-nota" id="notaOperador"{% if origem_sel != 'sensor' %} hidden{% endif %}>
+                    Leituras do sensor não têm operador
+                </span>
             </div>
-            <div class="col-md-3 d-flex gap-2">
+            <div class="col-md-2 d-flex gap-2">
                 <button type="submit" class="btn-s btn-s-fill" style="flex:1 1 auto;">
                     <i class="bi bi-funnel" aria-hidden="true"></i> Filtrar
                 </button>
@@ -536,9 +583,22 @@
         </form>
     </section>
 
-    <!-- Tabela -->
+    <!-- Tabela: coletas do operador -->
+    {# Filtrada para fora, a seção some inteira. Deixar uma tabela #}
+    {# vazia dizendo "nenhuma leitura" sugeriria ausência de dado, #}
+    {# quando foi a pessoa que pediu para não ver.                 #}
+    {% if origem_sel != 'sensor' %}
+    <div class="sec-head">
+        <h2 class="sec-title">
+            <i class="bi bi-clipboard-check" aria-hidden="true"></i> Coletas do operador
+        </h2>
+        <span class="sec-note">
+            {{ total_operador }} no período — parâmetros da Portaria 888/2021
+        </span>
+    </div>
+
     <section class="tabela-painel glass">
-        {% if leituras %}
+        {% if leituras_operador %}
         <div class="rolagem">
             <table class="table">
                 <thead>
@@ -560,7 +620,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for l in leituras %}
+                    {% for l in leituras_operador %}
                     <tr>
                         <td class="td-forte">{{ l.horario|date:"d/m/Y H:i" }}</td>
                         <td>{{ l.operador|default_if_none:"—" }}</td>
@@ -583,7 +643,9 @@
                         <td class="col-bruta">{% if l.ph_bruto is not None %}{{ l.ph_bruto|floatformat:2 }}{% else %}<span class="nil">—</span>{% endif %}</td>
 
                         <td>
-                            {% if l.status_conformidade %}
+                            {% if l.status_conformidade is None %}
+                                <span class="tag tag-nil" title="Leitura sem parâmetro da portaria — nada a julgar">Não avaliada</span>
+                            {% elif l.status_conformidade %}
                                 <span class="tag tag-ok">Conforme</span>
                             {% else %}
                                 <span class="tag tag-bad">Não conforme</span>
@@ -617,7 +679,7 @@
                         <td class="col-bruta">{{ medias.turbidez_bruta_ntu|default_if_none:"—" }}</td>
                         <td class="col-bruta">{{ medias.cor_bruta_uh|default_if_none:"—" }}</td>
                         <td class="col-bruta">{{ medias.ph_bruto|default_if_none:"—" }}</td>
-                        <td class="rotulo">{{ conformes }} de {{ total }}</td>
+                        <td class="rotulo">{{ conformes }} de {{ avaliadas }}{% if nao_avaliadas %}<br><span class="meta-nota">{{ nao_avaliadas }} não avaliadas</span>{% endif %}</td>
                     </tr>
                 </tbody>
             </table>
@@ -631,10 +693,74 @@
         {% endif %}
     </section>
 
-    {% if total > 500 %}
+    {% if total_operador > 500 %}
     <div class="rodape-nota">
-        Exibindo as 500 leituras mais recentes. Use os filtros ou exporte o CSV para ver todas.
+        Exibindo as 500 coletas mais recentes do operador. Use os filtros ou exporte o CSV para ver todas.
     </div>
+    {% endif %}
+    {% endif %}
+
+    <!-- Tabela: leituras do sensor -->
+    {% if origem_sel != 'operador' %}
+    <div class="sec-head">
+        <h2 class="sec-title">
+            <i class="bi bi-cpu" aria-hidden="true"></i> Leituras do sensor
+        </h2>
+        <span class="sec-note">
+            {{ total_sensor }} no período — calha Parshall, a cada 30 minutos
+        </span>
+    </div>
+
+    <section class="tabela-painel glass">
+        {% if leituras_sensor %}
+        <div class="rolagem">
+            <table class="table">
+                <thead>
+                    <tr>
+                        {# Só as colunas que o sensor preenche. Repetir as 11 da #}
+                        {# tabela acima encheria a tela de travessões.           #}
+                        <th>Data e hora</th>
+                        <th>Nível na calha <span class="nil">cm</span></th>
+                        <th>Vazão <span class="nil">L/s</span></th>
+                        <th class="col-tratada">Turbidez tratada <span class="nil">NTU</span></th>
+                        <th>Situação</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for l in leituras_sensor %}
+                    <tr>
+                        <td class="td-forte">{{ l.horario|date:"d/m/Y H:i" }}</td>
+                        <td>{% if l.nivel_cm is not None %}{{ l.nivel_cm|floatformat:1 }}{% else %}<span class="nil">—</span>{% endif %}</td>
+                        <td class="td-forte">{% if l.vazao_ls is not None %}{{ l.vazao_ls|floatformat:1 }}{% else %}<span class="nil">—</span>{% endif %}</td>
+                        <td class="col-tratada">{% if l.turbidez_ntu is not None %}{{ l.turbidez_ntu|floatformat:2 }}{% else %}<span class="nil">—</span>{% endif %}</td>
+                        <td>
+                            {% if l.status_conformidade is None %}
+                                <span class="tag tag-nil" title="Leitura sem parâmetro da portaria — nada a julgar">Não avaliada</span>
+                            {% elif l.status_conformidade %}
+                                <span class="tag tag-ok">Conforme</span>
+                            {% else %}
+                                <span class="tag tag-bad">Não conforme</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="vazio">
+            <i class="bi bi-cpu" aria-hidden="true"></i>
+            <div class="vazio-h">Nenhuma leitura do sensor no período</div>
+            <div class="vazio-p">O ESP32 não enviou nada neste intervalo, ou o filtro exclui as datas em que enviou.</div>
+        </div>
+        {% endif %}
+    </section>
+
+    {% if total_sensor > 500 %}
+    <div class="rodape-nota">
+        Exibindo as 500 leituras mais recentes do sensor. Exporte o CSV para ver todas.
+    </div>
+    {% endif %}
     {% endif %}
 
 </main>
@@ -642,6 +768,30 @@
 <script>
 (function () {
     "use strict";
+
+    /* ── Nome do operador x origem ──
+       Leitura de sensor não tem operador, então com "Sensor" escolhido o
+       campo de nome não teria efeito nenhum. Em vez de deixar a pessoa
+       digitar e estranhar o resultado, o campo é desligado e diz por quê.
+
+       Isto é conveniência, não regra: quem decide é a view, que já ignora
+       o nome nesse caso. Sem JS a tela continua correta. */
+    (function nomePorOrigem() {
+        var origem = document.getElementById('f_origem');
+        var campo  = document.getElementById('f_op');
+        var nota   = document.getElementById('notaOperador');
+        if (!origem || !campo) { return; }
+
+        function aplicar() {
+            var ehSensor = origem.value === 'sensor';
+            campo.disabled = ehSensor;
+            campo.style.opacity = ehSensor ? '.45' : '';
+            if (ehSensor) { campo.value = ''; }
+            if (nota) { nota.hidden = !ehSensor; }
+        }
+        origem.addEventListener('change', aplicar);
+        aplicar();
+    })();
 
     var CALMO = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
     var ANIMAR = !CALMO && typeof gsap !== 'undefined';
